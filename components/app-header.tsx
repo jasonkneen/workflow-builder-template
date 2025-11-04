@@ -39,7 +39,7 @@ export function AppHeader({
       <header className="border-b px-4 py-3 md:px-6 md:py-4">
         {/* Mobile: Two-line layout */}
         <div className="flex flex-col gap-2 md:hidden">
-          {/* First line: Back button + Title */}
+          {/* First line: Back button + Title + Avatar */}
           <div className="flex items-center gap-2">
             {showBackButton && (
               <Button variant="ghost" size="icon" onClick={handleBack} title="Back to workflows">
@@ -47,18 +47,16 @@ export function AppHeader({
               </Button>
             )}
             {disableTitleLink ? (
-              <div className="text-lg font-semibold">{title}</div>
+              <div className="min-w-0 flex-1 truncate text-lg font-semibold">{title}</div>
             ) : (
-              <Link href="/" className="transition-opacity hover:opacity-80">
-                <h1 className="text-lg font-semibold">{title}</h1>
+              <Link href="/" className="min-w-0 flex-1 transition-opacity hover:opacity-80">
+                <h1 className="truncate text-lg font-semibold">{title}</h1>
               </Link>
             )}
-          </div>
-          {/* Second line: Actions */}
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1">{actions}</div>
             <UserMenu />
           </div>
+          {/* Second line: Actions */}
+          <div className="flex items-center gap-1">{actions}</div>
         </div>
 
         {/* Desktop: Single line layout */}
