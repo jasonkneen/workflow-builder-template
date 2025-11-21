@@ -232,41 +232,45 @@ type SocialButtonsProps = {
     google: boolean;
   };
   onSignIn: (provider: "github" | "google" | "vercel") => void;
+  loadingProvider: "github" | "google" | "vercel" | null;
 };
 
-const SocialButtons = ({ enabledProviders, onSignIn }: SocialButtonsProps) => (
+const SocialButtons = ({ enabledProviders, onSignIn, loadingProvider }: SocialButtonsProps) => (
   <div className="flex flex-col gap-2">
     {enabledProviders.vercel && (
       <Button
         className="w-full"
+        disabled={loadingProvider !== null}
         onClick={() => onSignIn("vercel")}
         type="button"
         variant="outline"
       >
         <VercelIcon />
-        Continue with Vercel
+        {loadingProvider === "vercel" ? "Loading..." : "Sign In with Vercel"}
       </Button>
     )}
     {enabledProviders.github && (
       <Button
         className="w-full"
+        disabled={loadingProvider !== null}
         onClick={() => onSignIn("github")}
         type="button"
         variant="outline"
       >
         <GitHubIcon />
-        Continue with GitHub
+        {loadingProvider === "github" ? "Loading..." : "Sign In with GitHub"}
       </Button>
     )}
     {enabledProviders.google && (
       <Button
         className="w-full"
+        disabled={loadingProvider !== null}
         onClick={() => onSignIn("google")}
         type="button"
         variant="outline"
       >
         <GoogleIcon />
-        Continue with Google
+        {loadingProvider === "google" ? "Loading..." : "Sign In with Google"}
       </Button>
     )}
   </div>
@@ -280,6 +284,7 @@ export const AuthDialog = ({ children }: AuthDialogProps) => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingProvider, setLoadingProvider] = useState<"github" | "google" | "vercel" | null>(null);
 
   const enabledProviders = getEnabledAuthProviders();
   const singleProvider = getSingleProvider();
@@ -288,9 +293,11 @@ export const AuthDialog = ({ children }: AuthDialogProps) => {
     provider: "github" | "google" | "vercel"
   ) => {
     try {
+      setLoadingProvider(provider);
       await signIn.social({ provider, callbackURL: "/" });
     } catch {
       toast.error(`Failed to sign in with ${getProviderLabel(provider)}`);
+      setLoadingProvider(null);
     }
   };
 
@@ -365,6 +372,7 @@ export const AuthDialog = ({ children }: AuthDialogProps) => {
   if (singleProvider && singleProvider !== "email") {
     return (
       <Button
+        disabled={loadingProvider !== null}
         onClick={() =>
           handleSocialSignIn(singleProvider as "github" | "google" | "vercel")
         }
@@ -372,7 +380,7 @@ export const AuthDialog = ({ children }: AuthDialogProps) => {
         variant="default"
       >
         {getProviderIcon(singleProvider)}
-        Sign in with {getProviderLabel(singleProvider)}
+        {loadingProvider === singleProvider ? "Loading..." : `Sign in with ${getProviderLabel(singleProvider)}`}
       </Button>
     );
   }
@@ -444,6 +452,7 @@ export const AuthDialog = ({ children }: AuthDialogProps) => {
           {hasSocialProviders && (
             <SocialButtons
               enabledProviders={enabledProviders}
+              loadingProvider={loadingProvider}
               onSignIn={handleSocialSignIn}
             />
           )}
@@ -455,7 +464,7 @@ export const AuthDialog = ({ children }: AuthDialogProps) => {
               </div>
               <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-background px-2 text-muted-foreground">
-                  Or continue with email
+                  Or Sign In with email
                 </span>
               </div>
             </div>
