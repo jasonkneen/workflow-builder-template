@@ -19,4 +19,3 @@ export async function firecrawlSearchStep(input: {
     web: result.web,
   };
 }`;
-
