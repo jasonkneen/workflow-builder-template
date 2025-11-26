@@ -657,19 +657,19 @@ const WorkflowEditor = ({ params }: WorkflowPageProps) => {
   return (
     <div className="flex h-dvh w-full flex-col overflow-hidden">
       {/* Workflow not found overlay */}
-      {workflowNotFound && (
+              {workflowNotFound && (
         <div className="pointer-events-auto absolute inset-0 z-20 flex items-center justify-center">
-          <div className="rounded-lg border bg-background p-8 text-center shadow-lg">
+                  <div className="rounded-lg border bg-background p-8 text-center shadow-lg">
             <h1 className="mb-2 font-semibold text-2xl">Workflow Not Found</h1>
-            <p className="mb-6 text-muted-foreground">
+                    <p className="mb-6 text-muted-foreground">
               The workflow you're looking for doesn't exist or has been deleted.
-            </p>
-            <Button asChild>
-              <Link href="/">New Workflow</Link>
-            </Button>
-          </div>
-        </div>
-      )}
+                    </p>
+                    <Button asChild>
+                      <Link href="/">New Workflow</Link>
+                    </Button>
+                  </div>
+                </div>
+              )}
 
       {/* Expand button when panel is collapsed */}
       {!isMobile && panelCollapsed && (
@@ -725,11 +725,11 @@ const WorkflowEditor = ({ params }: WorkflowPageProps) => {
               >
                 <ChevronRight className="size-4" />
               </button>
-            )}
-          </div>
-          <NodeConfigPanel />
+                  )}
+                </div>
+                <NodeConfigPanel />
         </div>
-      )}
+          )}
     </div>
   );
 };

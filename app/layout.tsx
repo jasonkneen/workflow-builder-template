@@ -42,7 +42,7 @@ const RootLayout = ({ children }: RootLayoutProps) => (
             <ReactFlowProvider>
               <PersistentCanvas />
               <div className="pointer-events-none relative z-10">
-                {children}
+            {children}
               </div>
             </ReactFlowProvider>
             <Toaster />

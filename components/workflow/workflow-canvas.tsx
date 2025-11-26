@@ -118,9 +118,6 @@ export function WorkflowCanvas() {
   // Track if we have real nodes (not just placeholder "add" node)
   const hasRealNodes = nodes.some((n) => n.type !== "add");
   const hadRealNodesRef = useRef(false);
-  // Track previous panel width to calculate viewport shift
-  const prevPanelWidthRef = useRef<string | null>(null);
-
   // Pre-shift viewport when transitioning from homepage (before sidebar animates)
   const hasPreShiftedRef = useRef(false);
   useEffect(() => {
@@ -149,48 +146,6 @@ export function WorkflowCanvas() {
       );
     }
   }, [isTransitioningFromHomepage, getViewport, setViewport]);
-
-  // Shift viewport when sidebar opens/closes to keep content centered
-  useEffect(() => {
-    if (!viewportInitialized.current) {
-      prevPanelWidthRef.current = rightPanelWidth;
-      return;
-    }
-
-    const prevWidth = prevPanelWidthRef.current;
-    const currentWidth = rightPanelWidth;
-    prevPanelWidthRef.current = currentWidth;
-
-    // Calculate the change in panel width
-    const prevPercent = prevWidth ? Number.parseFloat(prevWidth) / 100 : 0;
-    const currentPercent = currentWidth
-      ? Number.parseFloat(currentWidth) / 100
-      : 0;
-    const widthChange = currentPercent - prevPercent;
-
-    // Skip if no change
-    if (widthChange === 0) {
-      return;
-    }
-
-    // Skip the initial home -> workflow transition (already pre-shifted)
-    if (hasPreShiftedRef.current && prevWidth === null && currentWidth) {
-      hasPreShiftedRef.current = false; // Reset for future transitions
-      return;
-    }
-
-    // Shift viewport to compensate for width change
-    // When sidebar opens (widthChange > 0), shift content left (decrease x)
-    // When sidebar closes (widthChange < 0), shift content right (increase x)
-    const viewport = getViewport();
-    const shiftPixels = (window.innerWidth * widthChange) / 2;
-
-    // Animate the shift
-    setViewport(
-      { ...viewport, x: viewport.x - shiftPixels },
-      { duration: isPanelAnimating ? 300 : 0 }
-    );
-  }, [rightPanelWidth, getViewport, setViewport, isPanelAnimating]);
 
   // Fit view when workflow changes (only on initial load, not home -> workflow)
   useEffect(() => {
