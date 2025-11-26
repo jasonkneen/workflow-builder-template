@@ -1,10 +1,11 @@
 import "server-only";
 
+import { scrapeCodegenTemplate } from "../plugins/firecrawl/codegen/scrape";
+import { searchCodegenTemplate } from "../plugins/firecrawl/codegen/search";
 // Import codegen templates directly
 import conditionTemplate from "./codegen-templates/condition";
 import createTicketTemplate from "./codegen-templates/create-ticket";
 import databaseQueryTemplate from "./codegen-templates/database-query";
-import firecrawlTemplate from "./codegen-templates/firecrawl";
 import generateImageTemplate from "./codegen-templates/generate-image";
 import generateTextTemplate from "./codegen-templates/generate-text";
 import httpRequestTemplate from "./codegen-templates/http-request";
@@ -37,8 +38,8 @@ function loadStepImplementation(actionType: string): string | null {
     "Generate Text": generateTextTemplate,
     "Generate Image": generateImageTemplate,
     "Database Query": databaseQueryTemplate,
-    Scrape: firecrawlTemplate,
-    Search: firecrawlTemplate,
+    Scrape: scrapeCodegenTemplate,
+    Search: searchCodegenTemplate,
     "HTTP Request": httpRequestTemplate,
     Condition: conditionTemplate,
   };

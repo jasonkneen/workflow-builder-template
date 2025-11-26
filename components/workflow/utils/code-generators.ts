@@ -5,13 +5,13 @@
 import conditionTemplate from "@/lib/codegen-templates/condition";
 import createTicketTemplate from "@/lib/codegen-templates/create-ticket";
 import databaseQueryTemplate from "@/lib/codegen-templates/database-query";
-import firecrawlScrapeTemplate from "@/lib/codegen-templates/firecrawl-scrape";
-import firecrawlSearchTemplate from "@/lib/codegen-templates/firecrawl-search";
 import generateImageTemplate from "@/lib/codegen-templates/generate-image";
 import generateTextTemplate from "@/lib/codegen-templates/generate-text";
 import httpRequestTemplate from "@/lib/codegen-templates/http-request";
 import sendEmailTemplate from "@/lib/codegen-templates/send-email";
 import sendSlackMessageTemplate from "@/lib/codegen-templates/send-slack-message";
+import { scrapeCodegenTemplate } from "@/plugins/firecrawl/codegen/scrape";
+import { searchCodegenTemplate } from "@/plugins/firecrawl/codegen/search";
 
 // Generate code snippet for a single node
 export const generateNodeCode = (node: {
@@ -81,9 +81,9 @@ export async function POST(request: NextRequest) {
       case "Condition":
         return conditionTemplate;
       case "Scrape":
-        return firecrawlScrapeTemplate;
+        return scrapeCodegenTemplate;
       case "Search":
-        return firecrawlSearchTemplate;
+        return searchCodegenTemplate;
       default:
         return `async function actionStep(input: Record<string, unknown>) {
   "use step";

@@ -1,8 +1,9 @@
 /**
- * Code template for Scrape action
- * This is a string template used for code generation - keep as string export
+ * Code generation template for Firecrawl Scrape action
+ * This template is used when exporting workflows to standalone Next.js projects
+ * It uses environment variables instead of integrationId
  */
-export default `import FirecrawlApp from '@mendable/firecrawl-js';
+export const scrapeCodegenTemplate = `import FirecrawlApp from '@mendable/firecrawl-js';
 
 export async function firecrawlScrapeStep(input: {
   url: string;
@@ -20,3 +21,4 @@ export async function firecrawlScrapeStep(input: {
     metadata: result.metadata,
   };
 }`;
+

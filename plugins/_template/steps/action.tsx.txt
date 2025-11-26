@@ -1,0 +1,119 @@
+/**
+ * STEP TEMPLATE
+ * 
+ * This file contains both the step function (server-side execution) 
+ * and the config fields component (UI for configuring the action).
+ * 
+ * Each action should have its own file in the steps/ directory.
+ */
+
+import "server-only";
+
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { TemplateBadgeInput } from "@/components/ui/template-badge-input";
+import { fetchCredentials } from "@/lib/credential-fetcher";
+import { getErrorMessage } from "@/lib/utils";
+
+/**
+ * Step Function
+ * This runs on the server during workflow execution
+ */
+export async function [actionName]Step(input: {
+  integrationId?: string;
+  // Add your input parameters here
+  [parameterName]: string;
+  [optionalParameter]?: string;
+}) {
+  "use step";
+
+  // Fetch credentials from the integration
+  const credentials = input.integrationId
+    ? await fetchCredentials(input.integrationId)
+    : {};
+
+  const apiKey = credentials.[ENV_VAR_NAME];
+
+  if (!apiKey) {
+    return {
+      success: false,
+      error: "[Integration Name] API Key is not configured.",
+    };
+  }
+
+  try {
+    // Your API call or logic here
+    const response = await fetch("[API_ENDPOINT]", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        [apiField]: input.[parameterName],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+
+    // Return data that other workflow nodes can reference
+    // e.g., {{NodeName.id}}, {{NodeName.url}}
+    return {
+      id: result.id,
+      url: result.url,
+      // Add other fields you want to expose
+    };
+  } catch (error) {
+    throw new Error(`Failed to [action description]: ${getErrorMessage(error)}`);
+  }
+}
+
+/**
+ * Config Fields Component
+ * UI for configuring this action in the workflow builder
+ */
+export function [ActionName]ConfigFields({
+  config,
+  onUpdateConfig,
+  disabled,
+}: {
+  config: Record<string, unknown>;
+  onUpdateConfig: (key: string, value: unknown) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <>
+      {/* Text/Template field with badge support */}
+      <div className="space-y-2">
+        <Label htmlFor="[field-id]">[Field Label]</Label>
+        <TemplateBadgeInput
+          disabled={disabled}
+          id="[field-id]"
+          onChange={(value) => onUpdateConfig("[config-key]", value)}
+          placeholder="Enter value or use {{NodeName.field}}"
+          value={(config?.["config-key"] as string) || ""}
+        />
+      </div>
+
+      {/* Regular input field */}
+      <div className="space-y-2">
+        <Label htmlFor="[other-field-id]">[Other Field Label]</Label>
+        <Input
+          disabled={disabled}
+          id="[other-field-id]"
+          onChange={(e) => onUpdateConfig("[other-config-key]", e.target.value)}
+          placeholder="[Placeholder]"
+          type="text"
+          value={(config?.["other-config-key"] as string) || ""}
+        />
+      </div>
+
+      {/* Add more fields as needed */}
+    </>
+  );
+}
+

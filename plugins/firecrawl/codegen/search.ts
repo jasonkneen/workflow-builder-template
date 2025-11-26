@@ -1,8 +1,9 @@
 /**
- * Code template for Search action
- * This is a string template used for code generation - keep as string export
+ * Code generation template for Firecrawl Search action
+ * This template is used when exporting workflows to standalone Next.js projects
+ * It uses environment variables instead of integrationId
  */
-export default `import FirecrawlApp from '@mendable/firecrawl-js';
+export const searchCodegenTemplate = `import FirecrawlApp from '@mendable/firecrawl-js';
 
 export async function firecrawlSearchStep(input: {
   query: string;
@@ -19,3 +20,4 @@ export async function firecrawlSearchStep(input: {
     web: result.web,
   };
 }`;
+

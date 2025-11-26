@@ -4,10 +4,13 @@
  * without code generation or eval()
  */
 
+import type {
+  firecrawlScrapeStep,
+  firecrawlSearchStep,
+} from "../../plugins/firecrawl";
 import type { conditionStep } from "./condition";
 import type { createTicketStep } from "./create-ticket";
 import type { databaseQueryStep } from "./database-query";
-import type { firecrawlScrapeStep, firecrawlSearchStep } from "./firecrawl";
 import type { generateImageStep } from "./generate-image";
 import type { generateTextStep } from "./generate-text";
 import type { httpRequestStep } from "./http-request";
@@ -65,11 +68,11 @@ export const stepRegistry: Record<string, StepFunction> = {
       input as Parameters<typeof logNodeCompleteStep>[0]
     ),
   Scrape: async (input) =>
-    (await import("./firecrawl")).firecrawlScrapeStep(
+    (await import("../../plugins/firecrawl")).firecrawlScrapeStep(
       input as Parameters<typeof firecrawlScrapeStep>[0]
     ),
   Search: async (input) =>
-    (await import("./firecrawl")).firecrawlSearchStep(
+    (await import("../../plugins/firecrawl")).firecrawlSearchStep(
       input as Parameters<typeof firecrawlSearchStep>[0]
     ),
 };
