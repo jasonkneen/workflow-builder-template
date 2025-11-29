@@ -290,6 +290,7 @@ type WorkflowHandlerParams = {
     id: string;
     data: { status?: "idle" | "running" | "success" | "error" };
   }) => void;
+  isExecuting: boolean;
   setIsExecuting: (value: boolean) => void;
   setIsSaving: (value: boolean) => void;
   setHasUnsavedChanges: (value: boolean) => void;
@@ -306,6 +307,7 @@ function useWorkflowHandlers({
   nodes,
   edges,
   updateNodeData,
+  isExecuting,
   setIsExecuting,
   setIsSaving,
   setHasUnsavedChanges,
@@ -378,6 +380,11 @@ function useWorkflowHandlers({
   };
 
   const handleExecute = async () => {
+    // Guard against concurrent executions
+    if (isExecuting) {
+      return;
+    }
+
     // Check for missing integrations before executing
     const missing = getMissingIntegrations(nodes, userIntegrations);
     if (missing.length > 0) {
@@ -389,6 +396,11 @@ function useWorkflowHandlers({
   };
 
   const handleExecuteAnyway = async () => {
+    // Guard against concurrent executions
+    if (isExecuting) {
+      return;
+    }
+
     setShowMissingIntegrationsDialog(false);
     await executeWorkflow();
   };
@@ -523,6 +535,7 @@ function useWorkflowActions(state: ReturnType<typeof useWorkflowState>) {
     nodes,
     edges,
     updateNodeData,
+    isExecuting,
     setIsExecuting,
     setIsSaving,
     setHasUnsavedChanges,
@@ -559,6 +572,7 @@ function useWorkflowActions(state: ReturnType<typeof useWorkflowState>) {
     nodes,
     edges,
     updateNodeData,
+    isExecuting,
     setIsExecuting,
     setIsSaving,
     setHasUnsavedChanges,
