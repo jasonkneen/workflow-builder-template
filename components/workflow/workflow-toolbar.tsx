@@ -1469,6 +1469,7 @@ function BrokenReferencesDialog({
   const handleGoToStep = (nodeId: string) => {
     actions.setShowBrokenReferencesDialog(false);
     state.setSelectedNodeId(nodeId);
+    state.setActiveTab("properties");
   };
 
   return (
@@ -1544,6 +1545,7 @@ function MissingRequiredFieldsDialog({
   const handleGoToStep = (nodeId: string) => {
     actions.setShowMissingRequiredFieldsDialog(false);
     state.setSelectedNodeId(nodeId);
+    state.setActiveTab("properties");
   };
 
   return (
