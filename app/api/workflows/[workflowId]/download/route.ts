@@ -157,11 +157,12 @@ function getIntegrationDependencies(
  * Generate .env.example content based on registered integrations
  */
 function generateEnvExample(): string {
-  const lines = ["# Add your environment variables here\n"];
+  const lines = ["# Add your environment variables here"];
 
   // Add system integration env vars
+  lines.push("");
   lines.push("# For database integrations");
-  lines.push("DATABASE_URL=your_database_url\n");
+  lines.push("DATABASE_URL=your_database_url");
 
   // Add plugin env vars from registry
   const envVars = getAllEnvVars();
