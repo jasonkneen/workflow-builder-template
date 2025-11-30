@@ -45,7 +45,7 @@ export const PLUGIN_STEP_IMPORTERS: Record<string, StepImporter> = {
     importer: () => import("@/plugins/firecrawl/steps/scrape/step"),
     stepFunction: "firecrawlScrapeStep",
   },
-  Scrape: {
+  "Scrape": {
     importer: () => import("@/plugins/firecrawl/steps/scrape/step"),
     stepFunction: "firecrawlScrapeStep",
   },
@@ -53,7 +53,7 @@ export const PLUGIN_STEP_IMPORTERS: Record<string, StepImporter> = {
     importer: () => import("@/plugins/firecrawl/steps/search/step"),
     stepFunction: "firecrawlSearchStep",
   },
-  Search: {
+  "Search": {
     importer: () => import("@/plugins/firecrawl/steps/search/step"),
     stepFunction: "firecrawlSearchStep",
   },
@@ -108,8 +108,42 @@ export const PLUGIN_STEP_IMPORTERS: Record<string, StepImporter> = {
 };
 
 /**
+ * Action labels - maps action IDs to human-readable labels
+ * Used for displaying friendly names in the UI (e.g., Runs tab)
+ */
+export const ACTION_LABELS: Record<string, string> = {
+  "ai-gateway/generate-text": "Generate Text",
+  "ai-gateway/generate-image": "Generate Image",
+  "firecrawl/scrape": "Scrape URL",
+  "firecrawl/search": "Search Web",
+  "linear/create-ticket": "Create Ticket",
+  "linear/find-issues": "Find Issues",
+  "resend/send-email": "Send Email",
+  "slack/send-message": "Send Slack Message",
+  "v0/create-chat": "Create Chat",
+  "v0/send-message": "Send Message",
+  "Scrape": "Scrape URL",
+  "Search": "Search Web",
+  "Generate Text": "Generate Text",
+  "Generate Image": "Generate Image",
+  "Send Email": "Send Email",
+  "Create Ticket": "Create Ticket",
+  "Find Issues": "Find Issues",
+  "Send Slack Message": "Send Slack Message",
+  "Create Chat": "Create Chat",
+  "Send Message": "Send Message",
+};
+
+/**
  * Get a step importer for an action type
  */
 export function getStepImporter(actionType: string): StepImporter | undefined {
   return PLUGIN_STEP_IMPORTERS[actionType];
+}
+
+/**
+ * Get the human-readable label for an action type
+ */
+export function getActionLabel(actionType: string): string | undefined {
+  return ACTION_LABELS[actionType];
 }

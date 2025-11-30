@@ -7,7 +7,11 @@ import {
   preValidateConditionExpression,
   validateConditionExpression,
 } from "@/lib/condition-validator";
-import { getStepImporter, type StepImporter } from "./step-registry";
+import {
+  getActionLabel,
+  getStepImporter,
+  type StepImporter,
+} from "./step-registry";
 import type { StepContext } from "./steps/step-handler";
 import { triggerStep } from "./steps/trigger";
 import { getErrorMessageAsync } from "./utils";
@@ -368,7 +372,15 @@ export async function executeWorkflow(input: WorkflowExecutionInput) {
       return node.data.label;
     }
     if (node.data.type === "action") {
-      return (node.data.config?.actionType as string) || "Action";
+      const actionType = node.data.config?.actionType as string;
+      if (actionType) {
+        // Look up the human-readable label from the step registry
+        const label = getActionLabel(actionType);
+        if (label) {
+          return label;
+        }
+      }
+      return "Action";
     }
     if (node.data.type === "trigger") {
       return (node.data.config?.triggerType as string) || "Trigger";

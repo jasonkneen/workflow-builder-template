@@ -223,6 +223,7 @@ async function generateStepRegistry(): Promise<void> {
   // Collect all action -> step mappings
   const stepEntries: Array<{
     actionId: string;
+    label: string;
     integration: string;
     stepImportPath: string;
     stepFunction: string;
@@ -233,6 +234,7 @@ async function generateStepRegistry(): Promise<void> {
       const fullActionId = computeActionId(integration.type, action.slug);
       stepEntries.push({
         actionId: fullActionId,
+        label: action.label,
         integration: integration.type,
         stepImportPath: action.stepImportPath,
         stepFunction: action.stepFunction,
@@ -275,6 +277,24 @@ async function generateStepRegistry(): Promise<void> {
     })
     .join("\n");
 
+  // Generate the action labels map for displaying human-readable names
+  const labelEntries = stepEntries
+    .map(({ actionId, label }) => `  "${actionId}": "${label}",`)
+    .join("\n");
+
+  // Also add legacy label mappings to the labels map
+  const legacyLabelEntries = Object.entries(legacyLabelsForAction)
+    .flatMap(([actionId, legacyLabels]) => {
+      const entry = stepEntries.find((e) => e.actionId === actionId);
+      if (!entry) {
+        return [];
+      }
+      return legacyLabels.map(
+        (legacyLabel) => `  "${legacyLabel}": "${entry.label}",`
+      );
+    })
+    .join("\n");
+
   const content = `/**
  * Step Registry (Auto-Generated)
  *
@@ -306,10 +326,26 @@ ${importerEntries}
 };
 
 /**
+ * Action labels - maps action IDs to human-readable labels
+ * Used for displaying friendly names in the UI (e.g., Runs tab)
+ */
+export const ACTION_LABELS: Record<string, string> = {
+${labelEntries}
+${legacyLabelEntries}
+};
+
+/**
  * Get a step importer for an action type
  */
 export function getStepImporter(actionType: string): StepImporter | undefined {
   return PLUGIN_STEP_IMPORTERS[actionType];
+}
+
+/**
+ * Get the human-readable label for an action type
+ */
+export function getActionLabel(actionType: string): string | undefined {
+  return ACTION_LABELS[actionType];
 }
 `;
 
