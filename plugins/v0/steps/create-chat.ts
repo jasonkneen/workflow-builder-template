@@ -23,7 +23,7 @@ export type CreateChatInput = StepInput &
 /**
  * Core logic - portable between app and export
  */
-export async function stepHandler(
+async function stepHandler(
   input: CreateChatCoreInput,
   credentials: V0Credentials
 ): Promise<CreateChatResult> {

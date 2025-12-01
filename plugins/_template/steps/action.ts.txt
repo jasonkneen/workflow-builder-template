@@ -40,7 +40,7 @@ export type [ActionName]Input = StepInput &
 /**
  * Core logic
  */
-export async function stepHandler(
+async function stepHandler(
   input: [ActionName]CoreInput,
   credentials: [IntegrationName]Credentials
 ): Promise<[ActionName]Result> {

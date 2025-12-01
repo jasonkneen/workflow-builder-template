@@ -34,7 +34,7 @@ export type FindIssuesInput = StepInput &
 /**
  * Core logic - portable between app and export
  */
-export async function stepHandler(
+async function stepHandler(
   input: FindIssuesCoreInput,
   credentials: LinearCredentials
 ): Promise<FindIssuesResult> {

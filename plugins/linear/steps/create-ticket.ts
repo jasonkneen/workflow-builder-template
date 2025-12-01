@@ -23,7 +23,7 @@ export type CreateTicketInput = StepInput &
 /**
  * Core logic - portable between app and export
  */
-export async function stepHandler(
+async function stepHandler(
   input: CreateTicketCoreInput,
   credentials: LinearCredentials
 ): Promise<CreateTicketResult> {

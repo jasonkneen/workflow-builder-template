@@ -27,7 +27,7 @@ export type GenerateImageInput = StepInput &
 /**
  * Core logic - portable between app and export
  */
-export async function stepHandler(
+async function stepHandler(
   input: GenerateImageCoreInput,
   credentials: AiGatewayCredentials
 ): Promise<GenerateImageResult> {

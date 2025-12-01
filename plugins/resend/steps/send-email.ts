@@ -30,7 +30,7 @@ export type SendEmailInput = StepInput &
 /**
  * Core logic - portable between app and export
  */
-export async function stepHandler(
+async function stepHandler(
   input: SendEmailCoreInput,
   credentials: ResendCredentials
 ): Promise<SendEmailResult> {

@@ -24,7 +24,7 @@ export type FirecrawlScrapeInput = StepInput &
 /**
  * Core logic - portable between app and export
  */
-export async function stepHandler(
+async function stepHandler(
   input: FirecrawlScrapeCoreInput,
   credentials: FirecrawlCredentials
 ): Promise<ScrapeResult> {

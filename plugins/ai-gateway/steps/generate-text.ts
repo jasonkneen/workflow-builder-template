@@ -70,7 +70,7 @@ function buildZodSchema(
 /**
  * Core logic - portable between app and export
  */
-export async function stepHandler(
+async function stepHandler(
   input: GenerateTextCoreInput,
   credentials: AiGatewayCredentials
 ): Promise<GenerateTextResult> {

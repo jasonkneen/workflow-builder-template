@@ -23,7 +23,7 @@ export type SendSlackMessageInput = StepInput &
 /**
  * Core logic - portable between app and export
  */
-export async function stepHandler(
+async function stepHandler(
   input: SendSlackMessageCoreInput,
   credentials: SlackCredentials
 ): Promise<SendSlackMessageResult> {

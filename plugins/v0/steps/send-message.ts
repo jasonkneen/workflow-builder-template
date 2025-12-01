@@ -23,7 +23,7 @@ export type SendMessageInput = StepInput &
 /**
  * Core logic - portable between app and export
  */
-export async function stepHandler(
+async function stepHandler(
   input: SendMessageCoreInput,
   credentials: V0Credentials
 ): Promise<SendMessageResult> {
