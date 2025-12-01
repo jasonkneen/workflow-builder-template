@@ -7,7 +7,7 @@
  * Contains auto-generated codegen templates for steps that export stepHandler.
  * These templates are used when exporting workflows to standalone projects.
  *
- * Generated templates: 9
+ * Generated templates: 10
  */
 
 /**
@@ -468,6 +468,62 @@ export async function sendEmailStep(
     return {
       success: false,
       error: \`Failed to send email: \${message}\`,
+    };
+  }
+}
+`,
+
+  "slack/send-message": `import { WebClient } from "@slack/web-api";
+import { fetchCredentials } from "./lib/credential-helper";
+
+type SendSlackMessageResult =
+  | { success: true; ts: string; channel: string }
+  | { success: false; error: string };
+
+export type SendSlackMessageCoreInput = {
+  slackChannel: string;
+  slackMessage: string;
+};
+
+export async function sendSlackMessageStep(
+  input: SendSlackMessageCoreInput,
+): Promise<SendSlackMessageResult> {
+  "use step";
+  const credentials = await fetchCredentials("slack");
+  const apiKey = credentials.SLACK_API_KEY;
+
+  if (!apiKey) {
+    return {
+      success: false,
+      error:
+        "SLACK_API_KEY is not configured. Please add it in Project Integrations.",
+    };
+  }
+
+  try {
+    const slack = new WebClient(apiKey);
+
+    const result = await slack.chat.postMessage({
+      channel: input.slackChannel,
+      text: input.slackMessage,
+    });
+
+    if (!result.ok) {
+      return {
+        success: false,
+        error: result.error || "Failed to send Slack message",
+      };
+    }
+
+    return {
+      success: true,
+      ts: result.ts || "",
+      channel: result.channel || "",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: \`Failed to send Slack message: \${getErrorMessage(error)}\`,
     };
   }
 }

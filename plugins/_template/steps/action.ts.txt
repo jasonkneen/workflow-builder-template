@@ -2,11 +2,15 @@
  * STEP FUNCTION TEMPLATE
  *
  * This file contains the server-side execution logic for your action.
- * It runs when the workflow executes this step.
+ * It uses the unified step code pattern:
+ *
+ * 1. `stepHandler` - Core logic that receives credentials as a parameter
+ *    (portable between app and export)
+ * 2. `[actionName]Step` - App entry point that fetches credentials and wraps with logging
  *
  * TODO:
  * 1. Update the input/result types to match your action's fields
- * 2. Implement your API call logic in the main function
+ * 2. Implement your API call logic in stepHandler
  * 3. The step function must be exported and match the name in index.ts
  */
 
@@ -15,32 +19,34 @@ import "server-only";
 import { fetchCredentials } from "@/lib/credential-fetcher";
 import { type StepInput, withStepLogging } from "@/lib/steps/step-handler";
 import { getErrorMessage } from "@/lib/utils";
+import type { [IntegrationName]Credentials } from "../credentials";
 
 // TODO: Customize result fields for your action
 type [ActionName]Result =
   | { success: true; resultId: string }
   | { success: false; error: string };
 
-// TODO: Customize input fields for your action
-export type [ActionName]Input = StepInput & {
-  integrationId?: string;
+// Core input fields (without app-specific context)
+export type [ActionName]CoreInput = {
   fieldA: string;
   fieldB?: string;
 };
 
-/**
- * [Action Name] logic - separated for clarity and testability
- * This function contains the actual business logic
- */
-async function [actionName](input: [ActionName]Input): Promise<[ActionName]Result> {
-  // Fetch credentials using the integrationId
-  const credentials = input.integrationId
-    ? await fetchCredentials(input.integrationId)
-    : {};
+// App input includes integrationId and step context
+export type [ActionName]Input = StepInput &
+  [ActionName]CoreInput & {
+    integrationId?: string;
+  };
 
+/**
+ * Core logic - portable between app and export
+ */
+export async function stepHandler(
+  input: [ActionName]CoreInput,
+  credentials: [IntegrationName]Credentials
+): Promise<[ActionName]Result> {
   const apiKey = credentials.[INTEGRATION_NAME]_API_KEY;
 
-  // Validate required credentials
   if (!apiKey) {
     return {
       success: false,
@@ -83,16 +89,19 @@ async function [actionName](input: [ActionName]Input): Promise<[ActionName]Resul
 }
 
 /**
- * [Action Name] Step
- * [Action Description]
- *
- * The step function wraps the logic with:
- * - "use step" directive for workflow tracking
- * - withStepLogging for automatic execution logging
+ * App entry point - fetches credentials and wraps with logging
  */
 export async function [actionName]Step(
   input: [ActionName]Input
 ): Promise<[ActionName]Result> {
   "use step";
-  return withStepLogging(input, () => [actionName](input));
+
+  const credentials = input.integrationId
+    ? await fetchCredentials(input.integrationId)
+    : {};
+
+  return withStepLogging(input, () => stepHandler(input, credentials));
 }
+
+// Export marker for codegen auto-generation
+export const _integrationType = "[integration-type]";

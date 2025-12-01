@@ -12,11 +12,11 @@
  * - plugins/index.ts (import registry)
  * - lib/types/integration.ts (IntegrationType union)
  * - lib/step-registry.ts (step function mappings)
+ * - lib/codegen-registry.ts (export code templates from stepHandler functions)
  */
 
 import type { IntegrationPlugin } from "../registry";
 import { registerIntegration } from "../registry";
-import { [actionName]CodegenTemplate } from "./codegen/[action-slug]";
 import { [IntegrationName]Icon } from "./icon";
 
 const [integrationName]Plugin: IntegrationPlugin = {
@@ -68,6 +68,7 @@ const [integrationName]Plugin: IntegrationPlugin = {
   },
 
   // Actions provided by this integration
+  // Note: codegenTemplate is auto-generated from stepHandler in step files
   actions: [
     {
       // Unique slug for this action (used in URLs and IDs)
@@ -123,9 +124,6 @@ const [integrationName]Plugin: IntegrationPlugin = {
         //   showWhen: { field: "option", equals: "b" },
         // },
       ],
-
-      // Code generation template (imported from ./codegen/[action-slug].ts)
-      codegenTemplate: [actionName]CodegenTemplate,
     },
     // Add more actions as needed
   ],
