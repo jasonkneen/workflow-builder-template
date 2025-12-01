@@ -82,7 +82,7 @@ export async function PATCH(
     const body = await request.json();
 
     // Validate that all integrationIds in nodes belong to the current user
-    if (body.nodes !== undefined) {
+    if (Array.isArray(body.nodes)) {
       const validation = await validateWorkflowIntegrations(
         body.nodes,
         session.user.id
