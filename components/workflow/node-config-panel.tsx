@@ -39,6 +39,7 @@ import {
   edgesAtom,
   isGeneratingAtom,
   isWorkflowOwnerAtom,
+  newlyCreatedNodeIdAtom,
   nodesAtom,
   pendingIntegrationNodesAtom,
   propertiesPanelActiveTabAtom,
@@ -164,6 +165,9 @@ export const PanelInner = () => {
   const setShowDeleteDialog = useSetAtom(showDeleteDialogAtom);
   const clearNodeStatuses = useSetAtom(clearNodeStatusesAtom);
   const setPendingIntegrationNodes = useSetAtom(pendingIntegrationNodesAtom);
+  const [newlyCreatedNodeId, setNewlyCreatedNodeId] = useAtom(
+    newlyCreatedNodeIdAtom
+  );
   const [showDeleteNodeAlert, setShowDeleteNodeAlert] = useState(false);
   const [showDeleteEdgeAlert, setShowDeleteEdgeAlert] = useState(false);
   const [showDeleteRunsAlert, setShowDeleteRunsAlert] = useState(false);
@@ -785,9 +789,14 @@ export const PanelInner = () => {
               isOwner && (
                 <ActionGrid
                   disabled={isGenerating}
-                  onSelectAction={(actionType) =>
-                    handleUpdateConfig("actionType", actionType)
-                  }
+                  isNewlyCreated={selectedNode?.id === newlyCreatedNodeId}
+                  onSelectAction={(actionType) => {
+                    handleUpdateConfig("actionType", actionType);
+                    // Clear newly created tracking once action is selected
+                    if (selectedNode?.id === newlyCreatedNodeId) {
+                      setNewlyCreatedNodeId(null);
+                    }
+                  }}
                 />
               )}
 
