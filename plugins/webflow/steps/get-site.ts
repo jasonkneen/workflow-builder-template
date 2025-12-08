@@ -24,23 +24,24 @@ type WebflowSiteResponse = {
   }>;
 };
 
+type GetSiteData = {
+  id: string;
+  displayName: string;
+  shortName: string;
+  previewUrl: string;
+  lastPublished?: string;
+  lastUpdated: string;
+  timeZone: string;
+  customDomains: Array<{
+    id: string;
+    url: string;
+    lastPublished?: string;
+  }>;
+};
+
 type GetSiteResult =
-  | {
-      success: true;
-      id: string;
-      displayName: string;
-      shortName: string;
-      previewUrl: string;
-      lastPublished?: string;
-      lastUpdated: string;
-      timeZone: string;
-      customDomains: Array<{
-        id: string;
-        url: string;
-        lastPublished?: string;
-      }>;
-    }
-  | { success: false; error: string };
+  | { success: true; data: GetSiteData }
+  | { success: false; error: { message: string } };
 
 export type GetSiteCoreInput = {
   siteId: string;
@@ -60,15 +61,17 @@ async function stepHandler(
   if (!apiKey) {
     return {
       success: false,
-      error:
-        "WEBFLOW_API_KEY is not configured. Please add it in Project Integrations.",
+      error: {
+        message:
+          "WEBFLOW_API_KEY is not configured. Please add it in Project Integrations.",
+      },
     };
   }
 
   if (!input.siteId) {
     return {
       success: false,
-      error: "Site ID is required",
+      error: { message: "Site ID is required" },
     };
   }
 
@@ -76,18 +79,19 @@ async function stepHandler(
     const response = await fetch(
       `${WEBFLOW_API_URL}/sites/${encodeURIComponent(input.siteId)}`,
       {
-      method: "GET",
-      headers: {
-        Accept: "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-    });
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+      }
+    );
 
     if (!response.ok) {
       const errorData = (await response.json()) as { message?: string };
       return {
         success: false,
-        error: errorData.message || `HTTP ${response.status}`,
+        error: { message: errorData.message || `HTTP ${response.status}` },
       };
     }
 
@@ -95,19 +99,21 @@ async function stepHandler(
 
     return {
       success: true,
-      id: site.id,
-      displayName: site.displayName,
-      shortName: site.shortName,
-      previewUrl: site.previewUrl,
-      lastPublished: site.lastPublished,
-      lastUpdated: site.lastUpdated,
-      timeZone: site.timeZone,
-      customDomains: site.customDomains || [],
+      data: {
+        id: site.id,
+        displayName: site.displayName,
+        shortName: site.shortName,
+        previewUrl: site.previewUrl,
+        lastPublished: site.lastPublished,
+        lastUpdated: site.lastUpdated,
+        timeZone: site.timeZone,
+        customDomains: site.customDomains || [],
+      },
     };
   } catch (error) {
     return {
       success: false,
-      error: `Failed to get site: ${getErrorMessage(error)}`,
+      error: { message: `Failed to get site: ${getErrorMessage(error)}` },
     };
   }
 }

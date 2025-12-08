@@ -24,21 +24,19 @@ type WebflowSite = {
   }>;
 };
 
+type SiteData = {
+  id: string;
+  displayName: string;
+  shortName: string;
+  previewUrl: string;
+  lastPublished?: string;
+  lastUpdated: string;
+  customDomains: string[];
+};
+
 type ListSitesResult =
-  | {
-      success: true;
-      sites: Array<{
-        id: string;
-        displayName: string;
-        shortName: string;
-        previewUrl: string;
-        lastPublished?: string;
-        lastUpdated: string;
-        customDomains: string[];
-      }>;
-      count: number;
-    }
-  | { success: false; error: string };
+  | { success: true; data: { sites: SiteData[]; count: number } }
+  | { success: false; error: { message: string } };
 
 export type ListSitesCoreInput = Record<string, never>;
 
@@ -56,8 +54,10 @@ async function stepHandler(
   if (!apiKey) {
     return {
       success: false,
-      error:
-        "WEBFLOW_API_KEY is not configured. Please add it in Project Integrations.",
+      error: {
+        message:
+          "WEBFLOW_API_KEY is not configured. Please add it in Project Integrations.",
+      },
     };
   }
 
@@ -74,7 +74,7 @@ async function stepHandler(
       const errorData = (await response.json()) as { message?: string };
       return {
         success: false,
-        error: errorData.message || `HTTP ${response.status}`,
+        error: { message: errorData.message || `HTTP ${response.status}` },
       };
     }
 
@@ -92,13 +92,12 @@ async function stepHandler(
 
     return {
       success: true,
-      sites,
-      count: sites.length,
+      data: { sites, count: sites.length },
     };
   } catch (error) {
     return {
       success: false,
-      error: `Failed to list sites: ${getErrorMessage(error)}`,
+      error: { message: `Failed to list sites: ${getErrorMessage(error)}` },
     };
   }
 }

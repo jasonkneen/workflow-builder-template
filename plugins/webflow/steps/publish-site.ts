@@ -19,10 +19,9 @@ type PublishResponse = {
 type PublishSiteResult =
   | {
       success: true;
-      publishedDomains: string[];
-      publishedToSubdomain: boolean;
+      data: { publishedDomains: string[]; publishedToSubdomain: boolean };
     }
-  | { success: false; error: string };
+  | { success: false; error: { message: string } };
 
 export type PublishSiteCoreInput = {
   siteId: string;
@@ -44,15 +43,17 @@ async function stepHandler(
   if (!apiKey) {
     return {
       success: false,
-      error:
-        "WEBFLOW_API_KEY is not configured. Please add it in Project Integrations.",
+      error: {
+        message:
+          "WEBFLOW_API_KEY is not configured. Please add it in Project Integrations.",
+      },
     };
   }
 
   if (!input.siteId) {
     return {
       success: false,
-      error: "Site ID is required",
+      error: { message: "Site ID is required" },
     };
   }
 
@@ -102,7 +103,7 @@ async function stepHandler(
       const errorData = (await response.json()) as { message?: string };
       return {
         success: false,
-        error: errorData.message || `HTTP ${response.status}`,
+        error: { message: errorData.message || `HTTP ${response.status}` },
       };
     }
 
@@ -110,13 +111,15 @@ async function stepHandler(
 
     return {
       success: true,
-      publishedDomains: result.customDomains?.map((d) => d.url) || [],
-      publishedToSubdomain: result.publishToWebflowSubdomain ?? false,
+      data: {
+        publishedDomains: result.customDomains?.map((d) => d.url) || [],
+        publishedToSubdomain: result.publishToWebflowSubdomain ?? false,
+      },
     };
   } catch (error) {
     return {
       success: false,
-      error: `Failed to publish site: ${getErrorMessage(error)}`,
+      error: { message: `Failed to publish site: ${getErrorMessage(error)}` },
     };
   }
 }
