@@ -4,11 +4,7 @@ import { fetchCredentials } from "@/lib/credential-fetcher";
 import { type StepInput, withStepLogging } from "@/lib/steps/step-handler";
 import { getErrorMessage } from "@/lib/utils";
 import type { ClerkCredentials } from "../credentials";
-import type { ClerkUser } from "../types";
-
-type GetUserResult =
-  | { success: true; user: ClerkUser }
-  | { success: false; error: string };
+import { type ClerkUserResult, toClerkUserData } from "../types";
 
 export type ClerkGetUserCoreInput = {
   userId: string;
@@ -25,21 +21,23 @@ export type ClerkGetUserInput = StepInput &
 async function stepHandler(
   input: ClerkGetUserCoreInput,
   credentials: ClerkCredentials
-): Promise<GetUserResult> {
+): Promise<ClerkUserResult> {
   const secretKey = credentials.CLERK_SECRET_KEY;
 
   if (!secretKey) {
     return {
       success: false,
-      error:
-        "CLERK_SECRET_KEY is not configured. Please add it in Project Integrations.",
+      error: {
+        message:
+          "CLERK_SECRET_KEY is not configured. Please add it in Project Integrations.",
+      },
     };
   }
 
   if (!input.userId) {
     return {
       success: false,
-      error: "User ID is required.",
+      error: { message: "User ID is required." },
     };
   }
 
@@ -56,20 +54,23 @@ async function stepHandler(
     );
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
+      const errorBody = await response.json().catch(() => ({}));
       return {
         success: false,
-        error:
-          error.errors?.[0]?.message || `Failed to get user: ${response.status}`,
+        error: {
+          message:
+            errorBody.errors?.[0]?.message ||
+            `Failed to get user: ${response.status}`,
+        },
       };
     }
 
-    const user = await response.json();
-    return { success: true, user };
-  } catch (error) {
+    const apiUser = await response.json();
+    return { success: true, data: toClerkUserData(apiUser) };
+  } catch (err) {
     return {
       success: false,
-      error: `Failed to get user: ${getErrorMessage(error)}`,
+      error: { message: `Failed to get user: ${getErrorMessage(err)}` },
     };
   }
 }
@@ -79,7 +80,7 @@ async function stepHandler(
  */
 export async function clerkGetUserStep(
   input: ClerkGetUserInput
-): Promise<GetUserResult> {
+): Promise<ClerkUserResult> {
   "use step";
 
   const credentials = input.integrationId

@@ -4,11 +4,7 @@ import { fetchCredentials } from "@/lib/credential-fetcher";
 import { type StepInput, withStepLogging } from "@/lib/steps/step-handler";
 import { getErrorMessage } from "@/lib/utils";
 import type { ClerkCredentials } from "../credentials";
-import type { ClerkUser } from "../types";
-
-type CreateUserResult =
-  | { success: true; user: ClerkUser }
-  | { success: false; error: string };
+import { type ClerkUserResult, toClerkUserData } from "../types";
 
 export type ClerkCreateUserCoreInput = {
   emailAddress: string;
@@ -30,21 +26,23 @@ export type ClerkCreateUserInput = StepInput &
 async function stepHandler(
   input: ClerkCreateUserCoreInput,
   credentials: ClerkCredentials
-): Promise<CreateUserResult> {
+): Promise<ClerkUserResult> {
   const secretKey = credentials.CLERK_SECRET_KEY;
 
   if (!secretKey) {
     return {
       success: false,
-      error:
-        "CLERK_SECRET_KEY is not configured. Please add it in Project Integrations.",
+      error: {
+        message:
+          "CLERK_SECRET_KEY is not configured. Please add it in Project Integrations.",
+      },
     };
   }
 
   if (!input.emailAddress) {
     return {
       success: false,
-      error: "Email address is required.",
+      error: { message: "Email address is required." },
     };
   }
 
@@ -69,7 +67,7 @@ async function stepHandler(
       } catch {
         return {
           success: false,
-          error: "Invalid JSON format for publicMetadata",
+          error: { message: "Invalid JSON format for publicMetadata" },
         };
       }
     }
@@ -79,7 +77,7 @@ async function stepHandler(
       } catch {
         return {
           success: false,
-          error: "Invalid JSON format for privateMetadata",
+          error: { message: "Invalid JSON format for privateMetadata" },
         };
       }
     }
@@ -95,21 +93,23 @@ async function stepHandler(
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
+      const errorBody = await response.json().catch(() => ({}));
       return {
         success: false,
-        error:
-          error.errors?.[0]?.message ||
-          `Failed to create user: ${response.status}`,
+        error: {
+          message:
+            errorBody.errors?.[0]?.message ||
+            `Failed to create user: ${response.status}`,
+        },
       };
     }
 
-    const user = await response.json();
-    return { success: true, user };
-  } catch (error) {
+    const apiUser = await response.json();
+    return { success: true, data: toClerkUserData(apiUser) };
+  } catch (err) {
     return {
       success: false,
-      error: `Failed to create user: ${getErrorMessage(error)}`,
+      error: { message: `Failed to create user: ${getErrorMessage(err)}` },
     };
   }
 }
@@ -119,7 +119,7 @@ async function stepHandler(
  */
 export async function clerkCreateUserStep(
   input: ClerkCreateUserInput
-): Promise<CreateUserResult> {
+): Promise<ClerkUserResult> {
   "use step";
 
   const credentials = input.integrationId

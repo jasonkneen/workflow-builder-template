@@ -92,6 +92,7 @@ Visit [http://localhost:3000](http://localhost:3000) to get started.
 - **Stripe**: Create Customer, Get Customer, Create Invoice
 - **Superagent**: Guard, Redact
 - **v0**: Create Chat, Send Message
+- **Webflow**: List Sites, Get Site, Publish Site
 <!-- PLUGINS:END -->
 
 ## Code Generation

@@ -6,8 +6,8 @@ import { getErrorMessage } from "@/lib/utils";
 import type { ClerkCredentials } from "../credentials";
 
 type DeleteUserResult =
-  | { success: true; deleted: boolean }
-  | { success: false; error: string };
+  | { success: true; data: { deleted: true } }
+  | { success: false; error: { message: string } };
 
 export type ClerkDeleteUserCoreInput = {
   userId: string;
@@ -30,15 +30,17 @@ async function stepHandler(
   if (!secretKey) {
     return {
       success: false,
-      error:
-        "CLERK_SECRET_KEY is not configured. Please add it in Project Integrations.",
+      error: {
+        message:
+          "CLERK_SECRET_KEY is not configured. Please add it in Project Integrations.",
+      },
     };
   }
 
   if (!input.userId) {
     return {
       success: false,
-      error: "User ID is required.",
+      error: { message: "User ID is required." },
     };
   }
 
@@ -56,20 +58,22 @@ async function stepHandler(
     );
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
+      const errorBody = await response.json().catch(() => ({}));
       return {
         success: false,
-        error:
-          error.errors?.[0]?.message ||
-          `Failed to delete user: ${response.status}`,
+        error: {
+          message:
+            errorBody.errors?.[0]?.message ||
+            `Failed to delete user: ${response.status}`,
+        },
       };
     }
 
-    return { success: true, deleted: true };
-  } catch (error) {
+    return { success: true, data: { deleted: true } };
+  } catch (err) {
     return {
       success: false,
-      error: `Failed to delete user: ${getErrorMessage(error)}`,
+      error: { message: `Failed to delete user: ${getErrorMessage(err)}` },
     };
   }
 }

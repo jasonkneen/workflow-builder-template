@@ -1,5 +1,6 @@
 import type { IntegrationPlugin } from "../registry";
 import { registerIntegration } from "../registry";
+import { UserCard } from "./components/user-card";
 import { ClerkIcon } from "./icon";
 
 const clerkPlugin: IntegrationPlugin = {
@@ -41,10 +42,15 @@ const clerkPlugin: IntegrationPlugin = {
       stepFunction: "clerkGetUserStep",
       stepImportPath: "get-user",
       outputFields: [
-        { field: "user.id", description: "User ID" },
-        { field: "user.first_name", description: "First name" },
-        { field: "user.last_name", description: "Last name" },
+        { field: "id", description: "User ID" },
+        { field: "firstName", description: "First name" },
+        { field: "lastName", description: "Last name" },
+        { field: "primaryEmailAddress", description: "Primary email address" },
       ],
+      outputConfig: {
+        type: "component",
+        component: UserCard,
+      },
       configFields: [
         {
           key: "userId",
@@ -64,10 +70,15 @@ const clerkPlugin: IntegrationPlugin = {
       stepFunction: "clerkCreateUserStep",
       stepImportPath: "create-user",
       outputFields: [
-        { field: "user.id", description: "User ID" },
-        { field: "user.first_name", description: "First name" },
-        { field: "user.last_name", description: "Last name" },
+        { field: "id", description: "User ID" },
+        { field: "firstName", description: "First name" },
+        { field: "lastName", description: "Last name" },
+        { field: "primaryEmailAddress", description: "Primary email address" },
       ],
+      outputConfig: {
+        type: "component",
+        component: UserCard,
+      },
       configFields: [
         {
           key: "emailAddress",
@@ -129,10 +140,15 @@ const clerkPlugin: IntegrationPlugin = {
       stepFunction: "clerkUpdateUserStep",
       stepImportPath: "update-user",
       outputFields: [
-        { field: "user.id", description: "User ID" },
-        { field: "user.first_name", description: "First name" },
-        { field: "user.last_name", description: "Last name" },
+        { field: "id", description: "User ID" },
+        { field: "firstName", description: "First name" },
+        { field: "lastName", description: "Last name" },
+        { field: "primaryEmailAddress", description: "Primary email address" },
       ],
+      outputConfig: {
+        type: "component",
+        component: UserCard,
+      },
       configFields: [
         {
           key: "userId",

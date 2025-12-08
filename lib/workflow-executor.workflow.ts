@@ -56,6 +56,7 @@ export type WorkflowExecutionInput = {
  * Helper to replace template variables in conditions
  */
 // biome-ignore lint/nursery/useMaxParams: Helper function needs all parameters for template replacement
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Template variable replacement requires nested logic for standardized outputs
 function replaceTemplateVariable(
   match: string,
   nodeId: string,
@@ -84,6 +85,21 @@ function replaceTemplateVariable(
     const fields = fieldPath.split(".");
     // biome-ignore lint/suspicious/noExplicitAny: Dynamic data traversal
     let current: any = output.data;
+
+    // For standardized outputs { success, data, error }, automatically look inside data
+    // unless explicitly accessing success/data/error
+    const firstField = fields[0];
+    if (
+      current &&
+      typeof current === "object" &&
+      "success" in current &&
+      "data" in current &&
+      firstField !== "success" &&
+      firstField !== "data" &&
+      firstField !== "error"
+    ) {
+      current = current.data;
+    }
 
     for (const field of fields) {
       if (current && typeof current === "object") {
@@ -309,6 +325,21 @@ function processTemplates(
           const fields = fieldPath.split(".");
           // biome-ignore lint/suspicious/noExplicitAny: Dynamic output data traversal
           let current: any = output.data;
+
+          // For standardized outputs { success, data, error }, automatically look inside data
+          // unless explicitly accessing success/data/error
+          const firstField = fields[0];
+          if (
+            current &&
+            typeof current === "object" &&
+            "success" in current &&
+            "data" in current &&
+            firstField !== "success" &&
+            firstField !== "data" &&
+            firstField !== "error"
+          ) {
+            current = current.data;
+          }
 
           for (const field of fields) {
             if (current && typeof current === "object") {
