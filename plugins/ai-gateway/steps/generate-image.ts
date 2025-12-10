@@ -40,7 +40,7 @@ async function stepHandler(
     };
   }
 
-  const modelId = input.imageModel || "google/imagen-4.0-generate";
+  const modelId = input.imageModel || "google/imagen-4.0-generate-001";
   const promptText = input.imagePrompt || "";
 
   if (!promptText || promptText.trim() === "") {
