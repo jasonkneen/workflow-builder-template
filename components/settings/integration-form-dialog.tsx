@@ -1,7 +1,7 @@
 "use client";
 
-import { ArrowLeft } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ArrowLeft, Search } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,7 +18,6 @@ import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { api, type Integration } from "@/lib/api-client";
 import type { IntegrationType } from "@/lib/types/integration";
-import { cn } from "@/lib/utils";
 import {
   getIntegration,
   getIntegrationLabels,
@@ -65,13 +64,14 @@ export function IntegrationFormDialog({
   preselectedType,
 }: IntegrationFormDialogProps) {
   const [saving, setSaving] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [formData, setFormData] = useState<IntegrationFormData>({
     name: "",
     type: preselectedType || null,
     config: {},
   });
 
-  // Step: "select" for type selection grid, "configure" for form
+  // Step: "select" for type selection list, "configure" for form
   const [step, setStep] = useState<"select" | "configure">(
     preselectedType || mode === "edit" ? "configure" : "select"
   );
@@ -105,6 +105,7 @@ export function IntegrationFormDialog({
 
   const handleBack = () => {
     setStep("select");
+    setSearchQuery("");
     setFormData({
       name: "",
       type: null,
@@ -120,16 +121,14 @@ export function IntegrationFormDialog({
     try {
       setSaving(true);
 
-      // Generate a default name if none provided
-      const integrationName =
-        formData.name.trim() || `${getLabel(formData.type)} Integration`;
+      const integrationName = formData.name.trim();
 
       if (mode === "edit" && integration) {
         await api.integration.update(integration.id, {
           name: integrationName,
           config: formData.config,
         });
-        toast.success("Integration updated");
+        toast.success("Connection updated");
         onSuccess?.(integration.id);
       } else {
         const newIntegration = await api.integration.create({
@@ -217,71 +216,91 @@ export function IntegrationFormDialog({
 
   const integrationTypes = getIntegrationTypes();
 
+  const filteredIntegrationTypes = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return integrationTypes;
+    }
+    const query = searchQuery.toLowerCase();
+    return integrationTypes.filter((type) =>
+      getLabel(type).toLowerCase().includes(query)
+    );
+  }, [integrationTypes, searchQuery]);
+
   const getDialogTitle = () => {
     if (mode === "edit") {
-      return "Edit Integration";
+      return "Edit Connection";
     }
     if (step === "select") {
-      return "Choose Integration";
+      return "Add Connection";
     }
-    return `Add ${formData.type ? getLabel(formData.type) : ""} Integration`;
+    return `Add ${formData.type ? getLabel(formData.type) : ""} Connection`;
   };
 
   const getDialogDescription = () => {
     if (mode === "edit") {
-      return "Update integration configuration";
+      return "Update your connection credentials";
     }
     if (step === "select") {
-      return "Select an integration type to configure";
+      return "Select a service to connect";
     }
-    return "Configure your integration";
+    return "Enter your credentials";
   };
 
   return (
     <Dialog onOpenChange={(isOpen) => !isOpen && onClose()} open={open}>
-      <DialogContent
-        className={cn(step === "select" ? "max-w-2xl" : "max-w-md")}
-      >
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>{getDialogTitle()}</DialogTitle>
           <DialogDescription>{getDialogDescription()}</DialogDescription>
         </DialogHeader>
 
         {step === "select" ? (
-          <div className="grid grid-cols-3 gap-2 py-2">
-            {integrationTypes.map((type) => (
-              <button
-                className="flex flex-col items-center gap-2 rounded-lg border p-4 text-sm transition-colors hover:bg-muted/50"
-                key={type}
-                onClick={() => handleSelectType(type)}
-                type="button"
-              >
-                <IntegrationIcon
-                  className="size-8"
-                  integration={type === "ai-gateway" ? "vercel" : type}
-                />
-                <span className="text-center font-medium">
-                  {getLabel(type)}
-                </span>
-              </button>
-            ))}
+          <div className="space-y-3">
+            <div className="relative">
+              <Search className="-translate-y-1/2 absolute top-1/2 left-3 size-4 text-muted-foreground" />
+              <Input
+                autoFocus
+                className="pl-9"
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search services..."
+                value={searchQuery}
+              />
+            </div>
+            <div className="max-h-[300px] space-y-1 overflow-y-auto">
+              {filteredIntegrationTypes.length === 0 ? (
+                <p className="py-4 text-center text-muted-foreground text-sm">
+                  No services found
+                </p>
+              ) : (
+                filteredIntegrationTypes.map((type) => (
+                  <button
+                    className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-muted/50"
+                    key={type}
+                    onClick={() => handleSelectType(type)}
+                    type="button"
+                  >
+                    <IntegrationIcon
+                      className="size-5"
+                      integration={type === "ai-gateway" ? "vercel" : type}
+                    />
+                    <span className="font-medium">{getLabel(type)}</span>
+                  </button>
+                ))
+              )}
+            </div>
           </div>
         ) : (
           <div className="space-y-4">
             {renderConfigFields()}
 
             <div className="space-y-2">
-              <Label htmlFor="name">Name (Optional)</Label>
+              <Label htmlFor="name">Label (Optional)</Label>
               <Input
                 id="name"
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
-                placeholder={
-                  formData.type
-                    ? `${getLabel(formData.type)} Integration`
-                    : "Integration"
-                }
+                placeholder="e.g. Production, Personal, Work"
                 value={formData.name}
               />
             </div>
@@ -289,9 +308,7 @@ export function IntegrationFormDialog({
         )}
 
         <DialogFooter
-          className={cn(
-            step === "select" ? "sm:justify-start" : "sm:justify-between"
-          )}
+          className={step === "configure" ? "sm:justify-between" : ""}
         >
           {step === "configure" && mode === "create" && !preselectedType && (
             <Button disabled={saving} onClick={handleBack} variant="ghost">

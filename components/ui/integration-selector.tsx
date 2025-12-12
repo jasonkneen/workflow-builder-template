@@ -1,8 +1,22 @@
 "use client";
 
 import { useAtomValue, useSetAtom } from "jotai";
-import { AlertTriangle } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  MoreHorizontal,
+  Plus,
+  Settings,
+  Trash2,
+} from "lucide-react";
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -17,6 +31,7 @@ import {
   integrationsVersionAtom,
 } from "@/lib/integrations-store";
 import type { IntegrationType } from "@/lib/types/integration";
+import { getIntegration } from "@/plugins";
 import { IntegrationFormDialog } from "@/components/settings/integration-form-dialog";
 
 type IntegrationSelectorProps = {
@@ -24,7 +39,6 @@ type IntegrationSelectorProps = {
   value?: string;
   onChange: (integrationId: string) => void;
   onOpenSettings?: () => void;
-  label?: string;
   disabled?: boolean;
 };
 
@@ -33,7 +47,6 @@ export function IntegrationSelector({
   value,
   onChange,
   onOpenSettings,
-  label,
   disabled,
 }: IntegrationSelectorProps) {
   const [integrations, setIntegrations] = useState<Integration[]>([]);
@@ -96,24 +109,26 @@ export function IntegrationSelector({
     );
   }
 
+  const plugin = getIntegration(integrationType);
+  const integrationLabel = plugin?.label || integrationType;
+
+  // No integrations - show error button to add one
   if (integrations.length === 0) {
     return (
-      <div className="space-y-2">
-        <Select disabled={disabled} onValueChange={handleValueChange} value={value}>
-          <SelectTrigger className="flex-1">
-            <div className="flex items-center gap-2">
-              <div className="rounded-full bg-orange-500/50 p-0.5">
-                <AlertTriangle className="size-3 text-white" />
-              </div>
-              <SelectValue placeholder="No integrations" />
-            </div>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__new__">New Integration</SelectItem>
-            <SelectItem value="__manage__">Manage Integrations</SelectItem>
-          </SelectContent>
-        </Select>
-        
+      <>
+        <Button
+          className="w-full justify-start gap-2 border-orange-500/50 bg-orange-500/10 text-orange-600 hover:bg-orange-500/20 dark:text-orange-400"
+          disabled={disabled}
+          onClick={() => setShowNewDialog(true)}
+          variant="outline"
+        >
+          <AlertTriangle className="size-4" />
+          <span className="flex-1 text-left">
+            Add {integrationLabel} connection
+          </span>
+          <Plus className="size-4" />
+        </Button>
+
         <IntegrationFormDialog
           mode="create"
           onClose={() => setShowNewDialog(false)}
@@ -121,29 +136,80 @@ export function IntegrationSelector({
           open={showNewDialog}
           preselectedType={integrationType}
         />
-      </div>
+      </>
     );
   }
 
+  // Single integration - show connected state with manage button
+  if (integrations.length === 1) {
+    const integration = integrations[0];
+
+    return (
+      <>
+        <div className="flex items-center gap-2">
+          <Button
+            className="flex-1 justify-start gap-2 border-green-500/30 bg-green-500/10 text-green-700 hover:bg-green-500/20 dark:text-green-400"
+            disabled={disabled}
+            onClick={onOpenSettings}
+            variant="outline"
+          >
+            <Check className="size-4" />
+            <span className="flex-1 truncate text-left">{integration.name}</span>
+            <Settings className="size-4" />
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button disabled={disabled} size="icon" variant="ghost">
+                <MoreHorizontal className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={onOpenSettings}>
+                <Trash2 className="mr-2 size-4" />
+                Remove Connection
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowNewDialog(true)}>
+                <Plus className="mr-2 size-4" />
+                Add Another Connection
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        <IntegrationFormDialog
+          mode="create"
+          onClose={() => setShowNewDialog(false)}
+          onSuccess={handleNewIntegrationCreated}
+          open={showNewDialog}
+          preselectedType={integrationType}
+        />
+      </>
+    );
+  }
+
+  // Multiple integrations - show dropdown selector
   return (
-    <div className="flex items-center gap-2">
-      {label && <span className="text-muted-foreground text-sm">{label}</span>}
-      <Select disabled={disabled} onValueChange={handleValueChange} value={value}>
-        <SelectTrigger className="flex-1">
-          <SelectValue placeholder="Select integration..." />
+    <>
+      <Select
+        disabled={disabled}
+        onValueChange={handleValueChange}
+        value={value}
+      >
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder="Select connection..." />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="__new__">New Integration</SelectItem>
-          <SelectItem value="__manage__">Manage Integrations</SelectItem>
-          {integrations.length > 0 && <Separator className="my-1" />}
           {integrations.map((integration) => (
             <SelectItem key={integration.id} value={integration.id}>
               {integration.name}
             </SelectItem>
           ))}
+          <Separator className="my-1" />
+          <SelectItem value="__new__">Add Connection</SelectItem>
+          <SelectItem value="__manage__">Manage Connections</SelectItem>
         </SelectContent>
       </Select>
-      
+
       <IntegrationFormDialog
         mode="create"
         onClose={() => setShowNewDialog(false)}
@@ -151,7 +217,7 @@ export function IntegrationSelector({
         open={showNewDialog}
         preselectedType={integrationType}
       />
-    </div>
+    </>
   );
 }
 

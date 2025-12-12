@@ -73,9 +73,9 @@ export function IntegrationsDialog({
         showCloseButton={false}
       >
         <DialogHeader>
-          <DialogTitle>Integrations</DialogTitle>
+          <DialogTitle>Connections</DialogTitle>
           <DialogDescription>
-            Manage your integrations that can be used across workflows
+            Manage API keys and credentials used by your workflows
           </DialogDescription>
         </DialogHeader>
 
@@ -95,7 +95,7 @@ export function IntegrationsDialog({
         <DialogFooter className="flex justify-between sm:justify-between">
           <Button onClick={() => setShowCreateDialog(true)} variant="outline">
             <Plus className="mr-2 size-4" />
-            Add Integration
+            Add Connection
           </Button>
           <Button onClick={() => handleClose(false)}>Done</Button>
         </DialogFooter>

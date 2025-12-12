@@ -16,7 +16,7 @@ export type GetIntegrationsResponse = {
 }[];
 
 export type CreateIntegrationRequest = {
-  name: string;
+  name?: string;
   type: IntegrationType;
   config: IntegrationConfig;
 };
@@ -92,16 +92,16 @@ export async function POST(request: Request) {
 
     const body: CreateIntegrationRequest = await request.json();
 
-    if (!(body.name && body.type && body.config)) {
+    if (!(body.type && body.config)) {
       return NextResponse.json(
-        { error: "Name, type, and config are required" },
+        { error: "Type and config are required" },
         { status: 400 }
       );
     }
 
     const integration = await createIntegration(
       session.user.id,
-      body.name,
+      body.name || "",
       body.type,
       body.config
     );

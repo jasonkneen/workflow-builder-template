@@ -4,7 +4,6 @@ import { Database, Search, Settings, Zap } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { IntegrationIcon } from "@/components/ui/integration-icon";
-import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { getAllActions } from "@/plugins";
 
@@ -69,13 +68,13 @@ type ActionGridProps = {
 function ActionIcon({ action }: { action: ActionType }) {
   if (action.integration) {
     return (
-      <IntegrationIcon className="size-8" integration={action.integration} />
+      <IntegrationIcon className="size-5" integration={action.integration} />
     );
   }
   if (action.icon) {
-    return <action.icon className="size-8" />;
+    return <action.icon className="size-5" />;
   }
-  return <Zap className="size-8" />;
+  return <Zap className="size-5" />;
 }
 
 export function ActionGrid({
@@ -103,50 +102,49 @@ export function ActionGrid({
   });
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="space-y-2">
-        <Label className="ml-1" htmlFor="action-filter">
-          Search Actions
-        </Label>
-        <div className="relative">
-          <Search className="absolute top-2.5 left-2.5 size-4 text-muted-foreground" />
-          <Input
-            className="pl-8"
-            data-testid="action-search-input"
-            disabled={disabled}
-            id="action-filter"
-            onChange={(e) => setFilter(e.target.value)}
-            placeholder="Search actions..."
-            ref={inputRef}
-            value={filter}
-          />
-        </div>
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
+      <div className="relative shrink-0">
+        <Search className="-translate-y-1/2 absolute top-1/2 left-3 size-4 text-muted-foreground" />
+        <Input
+          autoFocus={isNewlyCreated}
+          className="pl-9"
+          data-testid="action-search-input"
+          disabled={disabled}
+          id="action-filter"
+          onChange={(e) => setFilter(e.target.value)}
+          placeholder="Search actions..."
+          ref={inputRef}
+          value={filter}
+        />
       </div>
 
-      <div className="grid grid-cols-2 gap-2" data-testid="action-grid">
-        {filteredActions.map((action) => (
-          <button
-            className={cn(
-              "flex flex-col items-center justify-center gap-3 rounded-lg border bg-card p-4 transition-colors hover:border-primary hover:bg-accent",
-              disabled && "pointer-events-none opacity-50"
-            )}
-            data-testid={`action-option-${action.id.toLowerCase().replace(/\s+/g, "-")}`}
-            disabled={disabled}
-            key={action.id}
-            onClick={() => onSelectAction(action.id)}
-            type="button"
-          >
-            <ActionIcon action={action} />
-            <p className="text-center font-medium text-sm">{action.label}</p>
-          </button>
-        ))}
+      <div
+        className="min-h-0 flex-1 space-y-1 overflow-y-auto pb-4"
+        data-testid="action-grid"
+      >
+        {filteredActions.length === 0 ? (
+          <p className="py-4 text-center text-muted-foreground text-sm">
+            No actions found
+          </p>
+        ) : (
+          filteredActions.map((action) => (
+            <button
+              className={cn(
+                "flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-muted/50",
+                disabled && "pointer-events-none opacity-50"
+              )}
+              data-testid={`action-option-${action.id.toLowerCase().replace(/\s+/g, "-")}`}
+              disabled={disabled}
+              key={action.id}
+              onClick={() => onSelectAction(action.id)}
+              type="button"
+            >
+              <ActionIcon action={action} />
+              <span className="font-medium">{action.label}</span>
+            </button>
+          ))
+        )}
       </div>
-
-      {filteredActions.length === 0 && (
-        <p className="py-8 text-center text-muted-foreground text-sm">
-          No actions found
-        </p>
-      )}
     </div>
   );
 }
