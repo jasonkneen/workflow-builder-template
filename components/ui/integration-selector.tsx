@@ -1,8 +1,8 @@
 "use client";
 
-import { useAtom, useSetAtom } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { AlertTriangle, Check, Circle, Pencil, Plus } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { api, type Integration } from "@/lib/api-client";
 import {
@@ -34,8 +34,9 @@ export function IntegrationSelector({
   const [editingIntegration, setEditingIntegration] =
     useState<Integration | null>(null);
   const [globalIntegrations, setGlobalIntegrations] = useAtom(integrationsAtom);
-  const integrationsVersion = useRef(0);
+  const integrationsVersion = useAtomValue(integrationsVersionAtom);
   const setIntegrationsVersion = useSetAtom(integrationsVersionAtom);
+  const lastVersionRef = useRef(integrationsVersion);
   const [hasFetched, setHasFetched] = useState(false);
 
   // Filter integrations from global cache
@@ -47,37 +48,39 @@ export function IntegrationSelector({
   // Check if we have cached data
   const hasCachedData = globalIntegrations.length > 0;
 
-  const loadIntegrations = async (isBackground = false) => {
-    try {
-      const all = await api.integration.getAll();
-      // Update global store so other components can access it
-      setGlobalIntegrations(all);
-      const filtered = all.filter((i) => i.type === integrationType);
+  const loadIntegrations = useCallback(
+    async (isBackground = false) => {
+      try {
+        const all = await api.integration.getAll();
+        // Update global store so other components can access it
+        setGlobalIntegrations(all);
+        const filtered = all.filter((i) => i.type === integrationType);
 
-      // Auto-select if only one option and nothing selected yet
-      if (filtered.length === 1 && !value && !isBackground) {
-        onChange(filtered[0].id);
+        // Auto-select if only one option and nothing selected yet
+        if (filtered.length === 1 && !value && !isBackground) {
+          onChange(filtered[0].id);
+        }
+        setHasFetched(true);
+      } catch (error) {
+        console.error("Failed to load integrations:", error);
       }
-      setHasFetched(true);
-    } catch (error) {
-      console.error("Failed to load integrations:", error);
-    }
-  };
+    },
+    [integrationType, onChange, setGlobalIntegrations, value]
+  );
 
   useEffect(() => {
     // Always fetch in background, but track if it's the first fetch
     loadIntegrations(!hasCachedData);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [integrationType]);
+  }, [hasCachedData, loadIntegrations]);
 
   // Listen for version changes (from other components creating/editing integrations)
   useEffect(() => {
-    const unsubscribe = integrationsVersionAtom.onMount?.((setAtom) => {
-      // Re-fetch when version changes
+    // Skip initial render - only react to actual version changes
+    if (integrationsVersion !== lastVersionRef.current) {
+      lastVersionRef.current = integrationsVersion;
       loadIntegrations(true);
-    });
-    return unsubscribe;
-  }, []);
+    }
+  }, [integrationsVersion, loadIntegrations]);
 
   // Auto-select single integration from cached data
   useEffect(() => {
@@ -91,14 +94,12 @@ export function IntegrationSelector({
     onChange(integrationId);
     setShowNewDialog(false);
     // Increment version to trigger re-fetch in other selectors
-    integrationsVersion.current += 1;
     setIntegrationsVersion((v) => v + 1);
   };
 
   const handleEditSuccess = async () => {
     await loadIntegrations(true);
     setEditingIntegration(null);
-    integrationsVersion.current += 1;
     setIntegrationsVersion((v) => v + 1);
   };
 
@@ -188,7 +189,6 @@ export function IntegrationSelector({
             onDelete={async () => {
               await loadIntegrations(true);
               setEditingIntegration(null);
-              integrationsVersion.current += 1;
               setIntegrationsVersion((v) => v + 1);
             }}
             onSuccess={handleEditSuccess}
@@ -264,7 +264,6 @@ export function IntegrationSelector({
           onDelete={async () => {
             await loadIntegrations(true);
             setEditingIntegration(null);
-            integrationsVersion.current += 1;
             setIntegrationsVersion((v) => v + 1);
           }}
           onSuccess={handleEditSuccess}
