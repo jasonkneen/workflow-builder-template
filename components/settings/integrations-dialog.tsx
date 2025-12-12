@@ -1,7 +1,7 @@
 "use client";
 
 import { useSetAtom } from "jotai";
-import { Plus } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { integrationsVersionAtom } from "@/lib/integrations-store";
 import { IntegrationsManager } from "./integrations-manager";
@@ -27,6 +28,7 @@ export function IntegrationsDialog({
 }: IntegrationsDialogProps) {
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [filter, setFilter] = useState("");
   const setIntegrationsVersion = useSetAtom(integrationsVersionAtom);
   // Track if any changes were made during this dialog session
   const hasChangesRef = useRef(false);
@@ -48,6 +50,8 @@ export function IntegrationsDialog({
       hasChangesRef.current = false;
       // Reset create dialog state when opening
       setShowCreateDialog(false);
+      // Reset filter when opening
+      setFilter("");
     }
   }, [open, loadAll]);
 
@@ -68,10 +72,7 @@ export function IntegrationsDialog({
 
   return (
     <Dialog onOpenChange={handleClose} open={open}>
-      <DialogContent
-        className="max-h-[90vh] max-w-4xl overflow-y-auto"
-        showCloseButton={false}
-      >
+      <DialogContent className="max-w-4xl" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Connections</DialogTitle>
           <DialogDescription>
@@ -84,12 +85,24 @@ export function IntegrationsDialog({
             <Spinner />
           </div>
         ) : (
-          <div className="mt-4">
-            <IntegrationsManager
-              onCreateDialogClose={() => setShowCreateDialog(false)}
-              onIntegrationChange={handleIntegrationChange}
-              showCreateDialog={showCreateDialog}
-            />
+          <div className="mt-4 space-y-4">
+            <div className="relative">
+              <Search className="-translate-y-1/2 absolute top-1/2 left-3 size-4 text-muted-foreground" />
+              <Input
+                className="pl-9"
+                onChange={(e) => setFilter(e.target.value)}
+                placeholder="Filter connections..."
+                value={filter}
+              />
+            </div>
+            <div className="max-h-[300px] overflow-y-auto">
+              <IntegrationsManager
+                filter={filter}
+                onCreateDialogClose={() => setShowCreateDialog(false)}
+                onIntegrationChange={handleIntegrationChange}
+                showCreateDialog={showCreateDialog}
+              />
+            </div>
           </div>
         )}
 

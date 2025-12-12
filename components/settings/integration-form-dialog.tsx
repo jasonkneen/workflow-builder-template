@@ -43,6 +43,7 @@ import {
   getIntegrationLabels,
   getSortedIntegrationTypes,
 } from "@/plugins";
+import { getIntegrationDescriptions } from "@/plugins/registry";
 
 type IntegrationFormDialogProps = {
   open: boolean;
@@ -65,6 +66,9 @@ const SYSTEM_INTEGRATION_TYPES: IntegrationType[] = ["database"];
 const SYSTEM_INTEGRATION_LABELS: Record<string, string> = {
   database: "Database",
 };
+const SYSTEM_INTEGRATION_DESCRIPTIONS: Record<string, string> = {
+  database: "Connect to PostgreSQL databases",
+};
 
 // Get all integration types (plugins + system)
 const getIntegrationTypes = (): IntegrationType[] => [
@@ -75,6 +79,12 @@ const getIntegrationTypes = (): IntegrationType[] => [
 // Get label for any integration type
 const getLabel = (type: IntegrationType): string =>
   getIntegrationLabels()[type] || SYSTEM_INTEGRATION_LABELS[type] || type;
+
+// Get description for any integration type
+const getDescription = (type: IntegrationType): string =>
+  getIntegrationDescriptions()[type] ||
+  SYSTEM_INTEGRATION_DESCRIPTIONS[type] ||
+  "";
 
 function SecretField({
   fieldId,
@@ -419,20 +429,31 @@ function TypeSelector({
             No services found
           </p>
         ) : (
-          filteredTypes.map((type) => (
-            <button
-              className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-muted/50"
-              key={type}
-              onClick={() => onSelectType(type)}
-              type="button"
-            >
-              <IntegrationIcon
-                className="size-5"
-                integration={type === "ai-gateway" ? "vercel" : type}
-              />
-              <span className="font-medium">{getLabel(type)}</span>
-            </button>
-          ))
+          filteredTypes.map((type) => {
+            const description = getDescription(type);
+            return (
+              <button
+                className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-muted/50"
+                key={type}
+                onClick={() => onSelectType(type)}
+                type="button"
+              >
+                <IntegrationIcon
+                  className="size-5 shrink-0"
+                  integration={type === "ai-gateway" ? "vercel" : type}
+                />
+                <span className="min-w-0 flex-1 truncate">
+                  <span className="font-medium">{getLabel(type)}</span>
+                  {description && (
+                    <span className="text-muted-foreground text-xs">
+                      {" "}
+                      - {description}
+                    </span>
+                  )}
+                </span>
+              </button>
+            );
+          })
         )}
       </div>
     </div>

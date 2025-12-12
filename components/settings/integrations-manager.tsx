@@ -29,12 +29,14 @@ type IntegrationsManagerProps = {
   showCreateDialog: boolean;
   onCreateDialogClose?: () => void;
   onIntegrationChange?: () => void;
+  filter?: string;
 };
 
 export function IntegrationsManager({
   showCreateDialog: externalShowCreateDialog,
   onCreateDialogClose,
   onIntegrationChange,
+  filter = "",
 }: IntegrationsManagerProps) {
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,6 +71,7 @@ export function IntegrationsManager({
   // Get integrations with their labels, sorted by label then name
   const integrationsWithLabels = useMemo(() => {
     const labels = getIntegrationLabels() as Record<string, string>;
+    const filterLower = filter.toLowerCase();
 
     return integrations
       .map((integration) => ({
@@ -78,6 +81,14 @@ export function IntegrationsManager({
           SYSTEM_INTEGRATION_LABELS[integration.type] ||
           integration.type,
       }))
+      .filter((integration) => {
+        if (!filter) return true;
+        return (
+          integration.label.toLowerCase().includes(filterLower) ||
+          integration.name.toLowerCase().includes(filterLower) ||
+          integration.type.toLowerCase().includes(filterLower)
+        );
+      })
       .sort((a, b) => {
         const labelCompare = a.label.localeCompare(b.label);
         if (labelCompare !== 0) {
@@ -85,7 +96,7 @@ export function IntegrationsManager({
         }
         return a.name.localeCompare(b.name);
       });
-  }, [integrations]);
+  }, [integrations, filter]);
 
   const handleDelete = async (id: string) => {
     try {
@@ -139,70 +150,88 @@ export function IntegrationsManager({
     );
   }
 
-  return (
-    <div className="space-y-1">
-      {integrations.length === 0 ? (
+  const renderIntegrationsList = () => {
+    if (integrations.length === 0) {
+      return (
         <div className="py-8 text-center">
           <p className="text-muted-foreground text-sm">
             No connections configured yet
           </p>
         </div>
-      ) : (
-        <div className="space-y-1">
-          {integrationsWithLabels.map((integration) => (
-            <div
-              className="flex items-center justify-between rounded-md px-2 py-1.5"
-              key={integration.id}
-            >
-              <div className="flex items-center gap-2">
-                <IntegrationIcon
-                  className="size-4"
-                  integration={
-                    integration.type === "ai-gateway"
-                      ? "vercel"
-                      : integration.type
-                  }
-                />
-                <span className="font-medium text-sm">{integration.label}</span>
-                <span className="text-muted-foreground text-sm">
-                  {integration.name}
-                </span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Button
-                  className="h-7 px-2"
-                  disabled={testingId === integration.id}
-                  onClick={() => handleTest(integration.id)}
-                  size="sm"
-                  variant="outline"
-                >
-                  {testingId === integration.id ? (
-                    <Spinner className="size-3" />
-                  ) : (
-                    <span className="text-xs">Test</span>
-                  )}
-                </Button>
-                <Button
-                  className="size-7"
-                  onClick={() => setEditingIntegration(integration)}
-                  size="icon"
-                  variant="outline"
-                >
-                  <Pencil className="size-3" />
-                </Button>
-                <Button
-                  className="size-7"
-                  onClick={() => setDeletingId(integration.id)}
-                  size="icon"
-                  variant="outline"
-                >
-                  <Trash2 className="size-3" />
-                </Button>
-              </div>
-            </div>
-          ))}
+      );
+    }
+
+    if (integrationsWithLabels.length === 0) {
+      return (
+        <div className="py-8 text-center">
+          <p className="text-muted-foreground text-sm">
+            No connections match your filter
+          </p>
         </div>
-      )}
+      );
+    }
+
+    return (
+      <div className="space-y-1">
+        {integrationsWithLabels.map((integration) => (
+          <div
+            className="flex items-center justify-between rounded-md px-2 py-1.5"
+            key={integration.id}
+          >
+            <div className="flex items-center gap-2">
+              <IntegrationIcon
+                className="size-4"
+                integration={
+                  integration.type === "ai-gateway"
+                    ? "vercel"
+                    : integration.type
+                }
+              />
+              <span className="font-medium text-sm">{integration.label}</span>
+              <span className="text-muted-foreground text-sm">
+                {integration.name}
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Button
+                className="h-7 px-2"
+                disabled={testingId === integration.id}
+                onClick={() => handleTest(integration.id)}
+                size="sm"
+                variant="outline"
+              >
+                {testingId === integration.id ? (
+                  <Spinner className="size-3" />
+                ) : (
+                  <span className="text-xs">Test</span>
+                )}
+              </Button>
+              <Button
+                className="size-7"
+                onClick={() => setEditingIntegration(integration)}
+                size="icon"
+                variant="outline"
+              >
+                <Pencil className="size-3" />
+              </Button>
+              <Button
+                className="size-7"
+                onClick={() => setDeletingId(integration.id)}
+                size="icon"
+                variant="outline"
+              >
+                <Trash2 className="size-3" />
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-1">
+      {renderIntegrationsList()}
 
       {(showCreateDialog || editingIntegration) && (
         <IntegrationFormDialog

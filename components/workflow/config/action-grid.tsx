@@ -4,6 +4,8 @@ import {
   ChevronRight,
   Eye,
   EyeOff,
+  Grid3X3,
+  List,
   MoreHorizontal,
   Search,
   Settings,
@@ -104,8 +106,29 @@ function GroupIcon({
   return <Zap className="size-4" />;
 }
 
-// Local storage key for hidden groups
+function ActionIcon({
+  action,
+  className,
+}: {
+  action: ActionType;
+  className?: string;
+}) {
+  if (action.integration) {
+    return (
+      <IntegrationIcon className={className} integration={action.integration} />
+    );
+  }
+  if (action.category === "System") {
+    return <Settings className={cn(className, "text-muted-foreground")} />;
+  }
+  return <Zap className={cn(className, "text-muted-foreground")} />;
+}
+
+// Local storage keys
 const HIDDEN_GROUPS_KEY = "workflow-action-grid-hidden-groups";
+const VIEW_MODE_KEY = "workflow-action-grid-view-mode";
+
+type ViewMode = "list" | "grid";
 
 function getInitialHiddenGroups(): Set<string> {
   if (typeof window === "undefined") return new Set();
@@ -114,6 +137,16 @@ function getInitialHiddenGroups(): Set<string> {
     return stored ? new Set(JSON.parse(stored)) : new Set();
   } catch {
     return new Set();
+  }
+}
+
+function getInitialViewMode(): ViewMode {
+  if (typeof window === "undefined") return "list";
+  try {
+    const stored = localStorage.getItem(VIEW_MODE_KEY);
+    return stored === "grid" ? "grid" : "list";
+  } catch {
+    return "list";
   }
 }
 
@@ -130,8 +163,15 @@ export function ActionGrid({
     getInitialHiddenGroups
   );
   const [showHidden, setShowHidden] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>(getInitialViewMode);
   const actions = useAllActions();
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const toggleViewMode = () => {
+    const newMode = viewMode === "list" ? "grid" : "list";
+    setViewMode(newMode);
+    localStorage.setItem(VIEW_MODE_KEY, newMode);
+  };
 
   const toggleGroup = (category: string) => {
     setCollapsedGroups((prev) => {
@@ -224,6 +264,27 @@ export function ActionGrid({
             value={filter}
           />
         </div>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                className="shrink-0"
+                onClick={toggleViewMode}
+                size="icon"
+                variant="ghost"
+              >
+                {viewMode === "list" ? (
+                  <Grid3X3 className="size-4" />
+                ) : (
+                  <List className="size-4" />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {viewMode === "list" ? "Grid view" : "List view"}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
         {hiddenCount > 0 && (
           <TooltipProvider>
             <Tooltip>
@@ -252,7 +313,7 @@ export function ActionGrid({
       </div>
 
       <div
-        className="min-h-0 flex-1 space-y-1 overflow-y-auto pb-4"
+        className="min-h-0 flex-1 overflow-y-auto pb-4"
         data-testid="action-grid"
       >
         {filteredActions.length === 0 && (
@@ -265,7 +326,43 @@ export function ActionGrid({
             All groups are hidden
           </p>
         )}
-        {visibleGroups.length > 0 &&
+
+        {/* Grid View */}
+        {viewMode === "grid" && visibleGroups.length > 0 && (
+          <div
+            className="grid gap-2 p-1"
+            style={{
+              gridTemplateColumns: "repeat(auto-fill, minmax(72px, 1fr))",
+            }}
+          >
+            {filteredActions
+              .filter(
+                (action) => showHidden || !hiddenGroups.has(action.category)
+              )
+              .map((action) => (
+                <button
+                  className={cn(
+                    "flex aspect-square flex-col items-center justify-center gap-1.5 rounded-lg border border-transparent p-2 text-center transition-colors hover:border-border hover:bg-muted",
+                    disabled && "pointer-events-none opacity-50"
+                  )}
+                  data-testid={`action-option-${action.id.toLowerCase().replace(/\s+/g, "-")}`}
+                  disabled={disabled}
+                  key={action.id}
+                  onClick={() => onSelectAction(action.id)}
+                  type="button"
+                >
+                  <ActionIcon action={action} className="size-6" />
+                  <span className="line-clamp-2 font-medium text-xs leading-tight">
+                    {action.label}
+                  </span>
+                </button>
+              ))}
+          </div>
+        )}
+
+        {/* List View */}
+        {viewMode === "list" &&
+          visibleGroups.length > 0 &&
           visibleGroups.map((group, groupIndex) => {
             const isCollapsed = collapsedGroups.has(group.category);
             const isHidden = hiddenGroups.has(group.category);
@@ -324,7 +421,7 @@ export function ActionGrid({
                   group.actions.map((action) => (
                     <button
                       className={cn(
-                        "flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-muted",
+                        "flex w-full items-center rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-muted",
                         disabled && "pointer-events-none opacity-50"
                       )}
                       data-testid={`action-option-${action.id.toLowerCase().replace(/\s+/g, "-")}`}
@@ -333,11 +430,14 @@ export function ActionGrid({
                       onClick={() => onSelectAction(action.id)}
                       type="button"
                     >
-                      <span className="shrink-0 font-medium">
-                        {action.label}
-                      </span>
-                      <span className="truncate text-muted-foreground text-xs">
-                        {action.description}
+                      <span className="min-w-0 flex-1 truncate">
+                        <span className="font-medium">{action.label}</span>
+                        {action.description && (
+                          <span className="text-muted-foreground text-xs">
+                            {" "}
+                            - {action.description}
+                          </span>
+                        )}
                       </span>
                     </button>
                   ))}
