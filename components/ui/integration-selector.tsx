@@ -79,6 +79,13 @@ export function IntegrationSelector({
     return unsubscribe;
   }, []);
 
+  // Auto-select single integration from cached data
+  useEffect(() => {
+    if (integrations.length === 1 && !value && !disabled) {
+      onChange(integrations[0].id);
+    }
+  }, [integrations, value, disabled, onChange]);
+
   const handleNewIntegrationCreated = async (integrationId: string) => {
     await loadIntegrations(true);
     onChange(integrationId);
@@ -151,12 +158,6 @@ export function IntegrationSelector({
   if (integrations.length === 1) {
     const integration = integrations[0];
     const displayName = integration.name || `${integrationLabel} API Key`;
-    const isSelected = value === integration.id;
-
-    // Auto-select if not already selected
-    if (!isSelected && !disabled) {
-      onChange(integration.id);
-    }
 
     return (
       <>
