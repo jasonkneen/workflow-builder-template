@@ -1699,12 +1699,12 @@ function WorkflowIssuesDialog({
               </div>
             )}
 
-            {/* Missing Integrations Section */}
+            {/* Missing Connections Section */}
             {missingIntegrations.length > 0 && (
               <div className="space-y-2">
                 <h4 className="flex items-center gap-1.5 font-medium text-orange-600 text-sm dark:text-orange-400">
                   <AlertTriangle className="size-4" />
-                  Missing Integrations ({missingIntegrations.length})
+                  Missing Connections ({missingIntegrations.length})
                 </h4>
                 <div className="space-y-2">
                   {missingIntegrations.map((missing) => (

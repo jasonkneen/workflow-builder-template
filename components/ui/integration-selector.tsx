@@ -1,36 +1,16 @@
 "use client";
 
 import { useAtomValue, useSetAtom } from "jotai";
-import {
-  AlertTriangle,
-  Check,
-  MoreHorizontal,
-  Plus,
-  Settings,
-  Trash2,
-} from "lucide-react";
+import { AlertTriangle, Check, Circle, Pencil, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { api, type Integration } from "@/lib/api-client";
 import {
   integrationsAtom,
   integrationsVersionAtom,
 } from "@/lib/integrations-store";
 import type { IntegrationType } from "@/lib/types/integration";
+import { cn } from "@/lib/utils";
 import { getIntegration } from "@/plugins";
 import { IntegrationFormDialog } from "@/components/settings/integration-form-dialog";
 
@@ -40,18 +20,21 @@ type IntegrationSelectorProps = {
   onChange: (integrationId: string) => void;
   onOpenSettings?: () => void;
   disabled?: boolean;
+  onAddConnection?: () => void;
 };
 
 export function IntegrationSelector({
   integrationType,
   value,
   onChange,
-  onOpenSettings,
   disabled,
+  onAddConnection,
 }: IntegrationSelectorProps) {
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNewDialog, setShowNewDialog] = useState(false);
+  const [editingIntegration, setEditingIntegration] =
+    useState<Integration | null>(null);
   const integrationsVersion = useAtomValue(integrationsVersionAtom);
   const setGlobalIntegrations = useSetAtom(integrationsAtom);
   const setIntegrationsVersion = useSetAtom(integrationsVersionAtom);
@@ -64,7 +47,7 @@ export function IntegrationSelector({
       setGlobalIntegrations(all);
       const filtered = all.filter((i) => i.type === integrationType);
       setIntegrations(filtered);
-      
+
       // Auto-select if only one option and nothing selected yet
       if (filtered.length === 1 && !value) {
         onChange(filtered[0].id);
@@ -81,16 +64,6 @@ export function IntegrationSelector({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [integrationType, integrationsVersion]);
 
-  const handleValueChange = (newValue: string) => {
-    if (newValue === "__new__") {
-      setShowNewDialog(true);
-    } else if (newValue === "__manage__") {
-      onOpenSettings?.();
-    } else {
-      onChange(newValue);
-    }
-  };
-
   const handleNewIntegrationCreated = async (integrationId: string) => {
     await loadIntegrations();
     onChange(integrationId);
@@ -99,13 +72,25 @@ export function IntegrationSelector({
     setIntegrationsVersion((v) => v + 1);
   };
 
+  const handleEditSuccess = async () => {
+    await loadIntegrations();
+    setEditingIntegration(null);
+    setIntegrationsVersion((v) => v + 1);
+  };
+
+  const handleAddConnection = () => {
+    if (onAddConnection) {
+      onAddConnection();
+    } else {
+      setShowNewDialog(true);
+    }
+  };
+
   if (loading) {
     return (
-      <Select disabled value="">
-        <SelectTrigger className="flex-1">
-          <SelectValue placeholder="Loading..." />
-        </SelectTrigger>
-      </Select>
+      <div className="flex flex-col gap-1">
+        <div className="h-8 animate-pulse rounded-md bg-muted" />
+      </div>
     );
   }
 
@@ -119,7 +104,7 @@ export function IntegrationSelector({
         <Button
           className="w-full justify-start gap-2 border-orange-500/50 bg-orange-500/10 text-orange-600 hover:bg-orange-500/20 dark:text-orange-400"
           disabled={disabled}
-          onClick={() => setShowNewDialog(true)}
+          onClick={handleAddConnection}
           variant="outline"
         >
           <AlertTriangle className="size-4" />
@@ -140,75 +125,54 @@ export function IntegrationSelector({
     );
   }
 
-  // Single integration - show connected state with manage button
-  if (integrations.length === 1) {
-    const integration = integrations[0];
-
-    return (
-      <>
-        <div className="flex items-center gap-2">
-          <Button
-            className="flex-1 justify-start gap-2 border-green-500/30 bg-green-500/10 text-green-700 hover:bg-green-500/20 dark:text-green-400"
-            disabled={disabled}
-            onClick={onOpenSettings}
-            variant="outline"
-          >
-            <Check className="size-4" />
-            <span className="flex-1 truncate text-left">{integration.name}</span>
-            <Settings className="size-4" />
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button disabled={disabled} size="icon" variant="ghost">
-                <MoreHorizontal className="size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={onOpenSettings}>
-                <Trash2 className="mr-2 size-4" />
-                Remove Connection
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setShowNewDialog(true)}>
-                <Plus className="mr-2 size-4" />
-                Add Another Connection
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
-        <IntegrationFormDialog
-          mode="create"
-          onClose={() => setShowNewDialog(false)}
-          onSuccess={handleNewIntegrationCreated}
-          open={showNewDialog}
-          preselectedType={integrationType}
-        />
-      </>
-    );
-  }
-
-  // Multiple integrations - show dropdown selector
+  // Show radio-style selection list
   return (
     <>
-      <Select
-        disabled={disabled}
-        onValueChange={handleValueChange}
-        value={value}
-      >
-        <SelectTrigger className="w-full">
-          <SelectValue placeholder="Select connection..." />
-        </SelectTrigger>
-        <SelectContent>
-          {integrations.map((integration) => (
-            <SelectItem key={integration.id} value={integration.id}>
-              {integration.name}
-            </SelectItem>
-          ))}
-          <Separator className="my-1" />
-          <SelectItem value="__new__">Add Connection</SelectItem>
-          <SelectItem value="__manage__">Manage Connections</SelectItem>
-        </SelectContent>
-      </Select>
+      <div className="flex flex-col gap-1">
+        {integrations.map((integration) => {
+          const isSelected = value === integration.id;
+          const displayName =
+            integration.name || `${integrationLabel} API Key`;
+          return (
+            <div
+              className={cn(
+                "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
+                isSelected
+                  ? "bg-primary/10 text-primary"
+                  : "hover:bg-muted/50",
+                disabled && "cursor-not-allowed opacity-50"
+              )}
+              key={integration.id}
+            >
+              <button
+                className="flex flex-1 items-center gap-2 text-left"
+                disabled={disabled}
+                onClick={() => onChange(integration.id)}
+                type="button"
+              >
+                {isSelected ? (
+                  <Check className="size-4 shrink-0" />
+                ) : (
+                  <Circle className="size-4 shrink-0 text-muted-foreground" />
+                )}
+                <span className="truncate">{displayName}</span>
+              </button>
+              <Button
+                className="size-6 shrink-0"
+                disabled={disabled}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditingIntegration(integration);
+                }}
+                size="icon"
+                variant="ghost"
+              >
+                <Pencil className="size-3" />
+              </Button>
+            </div>
+          );
+        })}
+      </div>
 
       <IntegrationFormDialog
         mode="create"
@@ -217,6 +181,21 @@ export function IntegrationSelector({
         open={showNewDialog}
         preselectedType={integrationType}
       />
+
+      {editingIntegration && (
+        <IntegrationFormDialog
+          integration={editingIntegration}
+          mode="edit"
+          onClose={() => setEditingIntegration(null)}
+          onDelete={async () => {
+            await loadIntegrations();
+            setEditingIntegration(null);
+            setIntegrationsVersion((v) => v + 1);
+          }}
+          onSuccess={handleEditSuccess}
+          open
+        />
+      )}
     </>
   );
 }

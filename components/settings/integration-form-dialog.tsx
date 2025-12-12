@@ -1,8 +1,18 @@
 "use client";
 
-import { ArrowLeft, Search } from "lucide-react";
+import { ArrowLeft, Check, Pencil, Search, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -28,6 +38,7 @@ type IntegrationFormDialogProps = {
   open: boolean;
   onClose: () => void;
   onSuccess?: (integrationId: string) => void;
+  onDelete?: () => void;
   integration?: Integration | null;
   mode: "create" | "edit";
   preselectedType?: IntegrationType;
@@ -55,15 +66,280 @@ const getIntegrationTypes = (): IntegrationType[] => [
 const getLabel = (type: IntegrationType): string =>
   getIntegrationLabels()[type] || SYSTEM_INTEGRATION_LABELS[type] || type;
 
+function SecretField({
+  fieldId,
+  label,
+  configKey,
+  placeholder,
+  helpText,
+  helpLink,
+  value,
+  onChange,
+  isEditMode,
+}: {
+  fieldId: string;
+  label: string;
+  configKey: string;
+  placeholder?: string;
+  helpText?: string;
+  helpLink?: { url: string; text: string };
+  value: string;
+  onChange: (key: string, value: string) => void;
+  isEditMode: boolean;
+}) {
+  const [isEditing, setIsEditing] = useState(!isEditMode);
+  const hasNewValue = value.length > 0;
+
+  // In edit mode, start with "configured" state
+  // User can click to change, or clear after entering a new value
+  if (isEditMode && !isEditing && !hasNewValue) {
+    return (
+      <div className="space-y-2">
+        <Label htmlFor={fieldId}>{label}</Label>
+        <div className="flex items-center gap-2">
+          <div className="flex h-9 flex-1 items-center gap-2 rounded-md border bg-muted/30 px-3">
+            <Check className="size-4 text-green-600" />
+            <span className="text-muted-foreground text-sm">Configured</span>
+          </div>
+          <Button
+            onClick={() => setIsEditing(true)}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            <Pencil className="mr-1.5 size-3" />
+            Change
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={fieldId}>{label}</Label>
+      <div className="flex items-center gap-2">
+        <Input
+          autoFocus={isEditMode && isEditing}
+          className="flex-1"
+          id={fieldId}
+          onChange={(e) => onChange(configKey, e.target.value)}
+          placeholder={placeholder}
+          type="password"
+          value={value}
+        />
+        {isEditMode && (isEditing || hasNewValue) && (
+          <Button
+            onClick={() => {
+              onChange(configKey, "");
+              setIsEditing(false);
+            }}
+            size="icon"
+            type="button"
+            variant="ghost"
+          >
+            <X className="size-4" />
+          </Button>
+        )}
+      </div>
+      {(helpText || helpLink) && (
+        <p className="text-muted-foreground text-xs">
+          {helpText}
+          {helpLink && (
+            <a
+              className="underline hover:text-foreground"
+              href={helpLink.url}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              {helpLink.text}
+            </a>
+          )}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function ConfigFields({
+  formData,
+  updateConfig,
+  isEditMode,
+}: {
+  formData: IntegrationFormData;
+  updateConfig: (key: string, value: string) => void;
+  isEditMode: boolean;
+}) {
+  if (!formData.type) {
+    return null;
+  }
+
+  // Handle system integrations with hardcoded fields
+  if (formData.type === "database") {
+    return (
+      <SecretField
+        configKey="url"
+        fieldId="url"
+        helpText="Connection string in the format: postgresql://user:password@host:port/database"
+        isEditMode={isEditMode}
+        label="Database URL"
+        onChange={updateConfig}
+        placeholder="postgresql://user:password@host:port/database"
+        value={formData.config.url || ""}
+      />
+    );
+  }
+
+  // Get plugin form fields from registry
+  const plugin = getIntegration(formData.type);
+  if (!plugin?.formFields) {
+    return null;
+  }
+
+  return plugin.formFields.map((field) => {
+    const isSecretField = field.type === "password";
+
+    if (isSecretField) {
+      return (
+        <SecretField
+          configKey={field.configKey}
+          fieldId={field.id}
+          helpLink={field.helpLink}
+          helpText={field.helpText}
+          isEditMode={isEditMode}
+          key={field.id}
+          label={field.label}
+          onChange={updateConfig}
+          placeholder={field.placeholder}
+          value={formData.config[field.configKey] || ""}
+        />
+      );
+    }
+
+    return (
+      <div className="space-y-2" key={field.id}>
+        <Label htmlFor={field.id}>{field.label}</Label>
+        <Input
+          id={field.id}
+          onChange={(e) => updateConfig(field.configKey, e.target.value)}
+          placeholder={field.placeholder}
+          type={field.type}
+          value={formData.config[field.configKey] || ""}
+        />
+        {(field.helpText || field.helpLink) && (
+          <p className="text-muted-foreground text-xs">
+            {field.helpText}
+            {field.helpLink && (
+              <a
+                className="underline hover:text-foreground"
+                href={field.helpLink.url}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                {field.helpLink.text}
+              </a>
+            )}
+          </p>
+        )}
+      </div>
+    );
+  });
+}
+
+function DeleteConfirmDialog({
+  open,
+  onOpenChange,
+  deleting,
+  onDelete,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  deleting: boolean;
+  onDelete: () => void;
+}) {
+  return (
+    <AlertDialog onOpenChange={onOpenChange} open={open}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Connection</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to delete this connection? Workflows using it
+            will fail until a new one is configured.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+          <AlertDialogAction disabled={deleting} onClick={onDelete}>
+            {deleting ? <Spinner className="mr-2 size-4" /> : null}
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+function TypeSelector({
+  searchQuery,
+  onSearchChange,
+  filteredTypes,
+  onSelectType,
+}: {
+  searchQuery: string;
+  onSearchChange: (value: string) => void;
+  filteredTypes: IntegrationType[];
+  onSelectType: (type: IntegrationType) => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <div className="relative">
+        <Search className="-translate-y-1/2 absolute top-1/2 left-3 size-4 text-muted-foreground" />
+        <Input
+          autoFocus
+          className="pl-9"
+          onChange={(e) => onSearchChange(e.target.value)}
+          placeholder="Search services..."
+          value={searchQuery}
+        />
+      </div>
+      <div className="max-h-[300px] space-y-1 overflow-y-auto">
+        {filteredTypes.length === 0 ? (
+          <p className="py-4 text-center text-muted-foreground text-sm">
+            No services found
+          </p>
+        ) : (
+          filteredTypes.map((type) => (
+            <button
+              className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-muted/50"
+              key={type}
+              onClick={() => onSelectType(type)}
+              type="button"
+            >
+              <IntegrationIcon
+                className="size-5"
+                integration={type === "ai-gateway" ? "vercel" : type}
+              />
+              <span className="font-medium">{getLabel(type)}</span>
+            </button>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function IntegrationFormDialog({
   open,
   onClose,
   onSuccess,
+  onDelete,
   integration,
   mode,
   preselectedType,
 }: IntegrationFormDialogProps) {
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [formData, setFormData] = useState<IntegrationFormData>({
     name: "",
@@ -147,71 +423,31 @@ export function IntegrationFormDialog({
     }
   };
 
+  const handleDelete = async () => {
+    if (!integration) {
+      return;
+    }
+
+    try {
+      setDeleting(true);
+      await api.integration.delete(integration.id);
+      toast.success("Connection deleted");
+      onDelete?.();
+      onClose();
+    } catch (error) {
+      console.error("Failed to delete integration:", error);
+      toast.error("Failed to delete connection");
+    } finally {
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
   const updateConfig = (key: string, value: string) => {
     setFormData({
       ...formData,
       config: { ...formData.config, [key]: value },
     });
-  };
-
-  const renderConfigFields = () => {
-    if (!formData.type) {
-      return null;
-    }
-
-    // Handle system integrations with hardcoded fields
-    if (formData.type === "database") {
-      return (
-        <div className="space-y-2">
-          <Label htmlFor="url">Database URL</Label>
-          <Input
-            id="url"
-            onChange={(e) => updateConfig("url", e.target.value)}
-            placeholder="postgresql://..."
-            type="password"
-            value={formData.config.url || ""}
-          />
-          <p className="text-muted-foreground text-xs">
-            Connection string in the format:
-            postgresql://user:password@host:port/database
-          </p>
-        </div>
-      );
-    }
-
-    // Get plugin form fields from registry
-    const plugin = getIntegration(formData.type);
-    if (!plugin?.formFields) {
-      return null;
-    }
-
-    return plugin.formFields.map((field) => (
-      <div className="space-y-2" key={field.id}>
-        <Label htmlFor={field.id}>{field.label}</Label>
-        <Input
-          id={field.id}
-          onChange={(e) => updateConfig(field.configKey, e.target.value)}
-          placeholder={field.placeholder}
-          type={field.type}
-          value={formData.config[field.configKey] || ""}
-        />
-        {(field.helpText || field.helpLink) && (
-          <p className="text-muted-foreground text-xs">
-            {field.helpText}
-            {field.helpLink && (
-              <a
-                className="underline hover:text-foreground"
-                href={field.helpLink.url}
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                {field.helpLink.text}
-              </a>
-            )}
-          </p>
-        )}
-      </div>
-    ));
   };
 
   const integrationTypes = getIntegrationTypes();
@@ -255,43 +491,19 @@ export function IntegrationFormDialog({
         </DialogHeader>
 
         {step === "select" ? (
-          <div className="space-y-3">
-            <div className="relative">
-              <Search className="-translate-y-1/2 absolute top-1/2 left-3 size-4 text-muted-foreground" />
-              <Input
-                autoFocus
-                className="pl-9"
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search services..."
-                value={searchQuery}
-              />
-            </div>
-            <div className="max-h-[300px] space-y-1 overflow-y-auto">
-              {filteredIntegrationTypes.length === 0 ? (
-                <p className="py-4 text-center text-muted-foreground text-sm">
-                  No services found
-                </p>
-              ) : (
-                filteredIntegrationTypes.map((type) => (
-                  <button
-                    className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-muted/50"
-                    key={type}
-                    onClick={() => handleSelectType(type)}
-                    type="button"
-                  >
-                    <IntegrationIcon
-                      className="size-5"
-                      integration={type === "ai-gateway" ? "vercel" : type}
-                    />
-                    <span className="font-medium">{getLabel(type)}</span>
-                  </button>
-                ))
-              )}
-            </div>
-          </div>
+          <TypeSelector
+            filteredTypes={filteredIntegrationTypes}
+            onSearchChange={setSearchQuery}
+            onSelectType={handleSelectType}
+            searchQuery={searchQuery}
+          />
         ) : (
           <div className="space-y-4">
-            {renderConfigFields()}
+            <ConfigFields
+              formData={formData}
+              isEditMode={mode === "edit"}
+              updateConfig={updateConfig}
+            />
 
             <div className="space-y-2">
               <Label htmlFor="name">Label (Optional)</Label>
@@ -316,6 +528,16 @@ export function IntegrationFormDialog({
               Back
             </Button>
           )}
+          {step === "configure" && mode === "edit" && (
+            <Button
+              disabled={saving || deleting}
+              onClick={() => setShowDeleteConfirm(true)}
+              variant="ghost"
+            >
+              <Trash2 className="mr-2 size-4" />
+              Delete
+            </Button>
+          )}
           {step === "select" ? (
             <Button onClick={() => onClose()} variant="outline">
               Cancel
@@ -323,13 +545,13 @@ export function IntegrationFormDialog({
           ) : (
             <div className="flex gap-2">
               <Button
-                disabled={saving}
+                disabled={saving || deleting}
                 onClick={() => onClose()}
                 variant="outline"
               >
                 Cancel
               </Button>
-              <Button disabled={saving} onClick={handleSave}>
+              <Button disabled={saving || deleting} onClick={handleSave}>
                 {saving ? <Spinner className="mr-2 size-4" /> : null}
                 {mode === "edit" ? "Update" : "Create"}
               </Button>
@@ -337,6 +559,13 @@ export function IntegrationFormDialog({
           )}
         </DialogFooter>
       </DialogContent>
+
+      <DeleteConfirmDialog
+        deleting={deleting}
+        onDelete={handleDelete}
+        onOpenChange={setShowDeleteConfirm}
+        open={showDeleteConfirm}
+      />
     </Dialog>
   );
 }
