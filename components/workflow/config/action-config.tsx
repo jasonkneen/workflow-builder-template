@@ -10,6 +10,7 @@ import {
   Select,
   SelectContent,
   SelectItem,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -339,7 +340,7 @@ export function ActionConfig({
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-2">
           <Label className="ml-1" htmlFor="actionCategory">
-            Category
+            Service
           </Label>
           <Select
             disabled={disabled}
@@ -356,6 +357,7 @@ export function ActionConfig({
                   <span>System</span>
                 </div>
               </SelectItem>
+              <SelectSeparator />
               {integrations.map((integration) => (
                 <SelectItem key={integration.type} value={integration.label}>
                   <div className="flex items-center gap-2">
@@ -405,7 +407,7 @@ export function ActionConfig({
                   <HelpCircle className="size-3.5 text-muted-foreground" />
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Required for this step to run</p>
+                  <p>API key or OAuth credentials for this service</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>

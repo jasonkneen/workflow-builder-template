@@ -147,7 +147,58 @@ export function IntegrationSelector({
     );
   }
 
-  // Show radio-style selection list
+  // Single integration - show as outlined field (not radio-style)
+  if (integrations.length === 1) {
+    const integration = integrations[0];
+    const displayName = integration.name || `${integrationLabel} API Key`;
+    const isSelected = value === integration.id;
+
+    // Auto-select if not already selected
+    if (!isSelected && !disabled) {
+      onChange(integration.id);
+    }
+
+    return (
+      <>
+        <div
+          className={cn(
+            "flex h-9 w-full items-center gap-2 rounded-md border px-3 text-sm",
+            disabled && "cursor-not-allowed opacity-50"
+          )}
+        >
+          <Check className="size-4 shrink-0 text-green-600" />
+          <span className="flex-1 truncate">{displayName}</span>
+          <Button
+            className="size-6 shrink-0"
+            disabled={disabled}
+            onClick={() => setEditingIntegration(integration)}
+            size="icon"
+            variant="ghost"
+          >
+            <Pencil className="size-3" />
+          </Button>
+        </div>
+
+        {editingIntegration && (
+          <IntegrationFormDialog
+            integration={editingIntegration}
+            mode="edit"
+            onClose={() => setEditingIntegration(null)}
+            onDelete={async () => {
+              await loadIntegrations(true);
+              setEditingIntegration(null);
+              integrationsVersion.current += 1;
+              setIntegrationsVersion((v) => v + 1);
+            }}
+            onSuccess={handleEditSuccess}
+            open
+          />
+        )}
+      </>
+    );
+  }
+
+  // Multiple integrations - show radio-style selection list
   return (
     <>
       <div className="flex flex-col gap-1">
@@ -158,7 +209,7 @@ export function IntegrationSelector({
           return (
             <div
               className={cn(
-                "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
+                "flex w-full items-center gap-2 rounded-md px-[13px] py-1.5 text-sm transition-colors",
                 isSelected
                   ? "bg-primary/10 text-primary"
                   : "hover:bg-muted/50",

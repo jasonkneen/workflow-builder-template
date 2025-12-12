@@ -27,11 +27,13 @@ const SYSTEM_INTEGRATION_LABELS: Record<string, string> = {
 
 type IntegrationsManagerProps = {
   showCreateDialog: boolean;
+  onCreateDialogClose?: () => void;
   onIntegrationChange?: () => void;
 };
 
 export function IntegrationsManager({
   showCreateDialog: externalShowCreateDialog,
+  onCreateDialogClose,
   onIntegrationChange,
 }: IntegrationsManagerProps) {
   const [integrations, setIntegrations] = useState<Integration[]>([]);
@@ -121,6 +123,7 @@ export function IntegrationsManager({
   const handleDialogClose = () => {
     setShowCreateDialog(false);
     setEditingIntegration(null);
+    onCreateDialogClose?.();
   };
 
   const handleDialogSuccess = async () => {

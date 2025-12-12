@@ -103,7 +103,6 @@ function SecretField({
           </div>
           <Button
             onClick={() => setIsEditing(true)}
-            size="sm"
             type="button"
             variant="outline"
           >

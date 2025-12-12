@@ -86,6 +86,7 @@ export function IntegrationsDialog({
         ) : (
           <div className="mt-4">
             <IntegrationsManager
+              onCreateDialogClose={() => setShowCreateDialog(false)}
               onIntegrationChange={handleIntegrationChange}
               showCreateDialog={showCreateDialog}
             />
