@@ -362,12 +362,25 @@ export const integrationApi = {
       method: "DELETE",
     }),
 
-  // Test connection
+  // Test existing integration connection
   testConnection: (integrationId: string) =>
     apiCall<{ status: "success" | "error"; message: string }>(
       `/api/integrations/${integrationId}/test`,
       {
         method: "POST",
+      }
+    ),
+
+  // Test credentials without saving
+  testCredentials: (data: {
+    type: IntegrationType;
+    config: IntegrationConfig;
+  }) =>
+    apiCall<{ status: "success" | "error"; message: string }>(
+      "/api/integrations/test",
+      {
+        method: "POST",
+        body: JSON.stringify(data),
       }
     ),
 };

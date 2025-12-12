@@ -1,7 +1,7 @@
 "use client";
 
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { AlertTriangle, Check, Circle, Pencil, Plus } from "lucide-react";
+import { AlertTriangle, Check, Circle, Pencil, Plus, Settings } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { api, type Integration } from "@/lib/api-client";
@@ -27,6 +27,7 @@ export function IntegrationSelector({
   integrationType,
   value,
   onChange,
+  onOpenSettings,
   disabled,
   onAddConnection,
 }: IntegrationSelectorProps) {
@@ -236,6 +237,17 @@ export function IntegrationSelector({
             </div>
           );
         })}
+        {onOpenSettings && (
+          <button
+            className="flex w-full items-center gap-2 rounded-md px-[13px] py-1.5 text-muted-foreground text-sm transition-colors hover:bg-muted/50 hover:text-foreground"
+            disabled={disabled}
+            onClick={onOpenSettings}
+            type="button"
+          >
+            <Settings className="size-4 shrink-0" />
+            <span>Manage all connections</span>
+          </button>
+        )}
       </div>
 
       <IntegrationFormDialog

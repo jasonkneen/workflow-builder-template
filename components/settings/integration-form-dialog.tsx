@@ -1,6 +1,16 @@
 "use client";
 
-import { ArrowLeft, Check, Pencil, Search, Trash2, X } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  CheckCircle2,
+  Pencil,
+  Search,
+  Trash2,
+  X,
+  XCircle,
+  Zap,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -245,6 +255,108 @@ function ConfigFields({
   });
 }
 
+function FormFooterActions({
+  step,
+  mode,
+  preselectedType,
+  saving,
+  deleting,
+  testing,
+  testResult,
+  onBack,
+  onDelete,
+  onTestConnection,
+  onClose,
+}: {
+  step: "select" | "configure";
+  mode: "create" | "edit";
+  preselectedType?: IntegrationType;
+  saving: boolean;
+  deleting: boolean;
+  testing: boolean;
+  testResult: { status: "success" | "error"; message: string } | null;
+  onBack: () => void;
+  onDelete: () => void;
+  onTestConnection: () => void;
+  onClose: () => void;
+}) {
+  if (step === "select") {
+    return (
+      <Button onClick={onClose} variant="outline">
+        Cancel
+      </Button>
+    );
+  }
+
+  return (
+    <>
+      <div className="flex gap-2">
+        {mode === "create" && !preselectedType && (
+          <Button disabled={saving} onClick={onBack} variant="ghost">
+            <ArrowLeft className="mr-2 size-4" />
+            Back
+          </Button>
+        )}
+        {mode === "edit" && (
+          <Button
+            disabled={saving || deleting || testing}
+            onClick={onDelete}
+            variant="ghost"
+          >
+            <Trash2 className="mr-2 size-4" />
+            Delete
+          </Button>
+        )}
+        <Button
+          disabled={saving || deleting || testing}
+          onClick={onTestConnection}
+          variant="ghost"
+        >
+          <TestConnectionIcon testing={testing} testResult={testResult} />
+          Test Connection
+        </Button>
+      </div>
+      <div className="flex gap-2">
+        <Button
+          disabled={saving || deleting || testing}
+          onClick={onClose}
+          type="button"
+          variant="outline"
+        >
+          Cancel
+        </Button>
+        <Button
+          disabled={saving || deleting || testing}
+          form="integration-form"
+          type="submit"
+        >
+          {saving ? <Spinner className="mr-2 size-4" /> : null}
+          {mode === "edit" ? "Update" : "Create"}
+        </Button>
+      </div>
+    </>
+  );
+}
+
+function TestConnectionIcon({
+  testing,
+  testResult,
+}: {
+  testing: boolean;
+  testResult: { status: "success" | "error"; message: string } | null;
+}) {
+  if (testing) {
+    return <Spinner className="mr-2 size-4" />;
+  }
+  if (testResult?.status === "success") {
+    return <CheckCircle2 className="mr-2 size-4 text-green-600" />;
+  }
+  if (testResult?.status === "error") {
+    return <XCircle className="mr-2 size-4 text-red-600" />;
+  }
+  return <Zap className="mr-2 size-4" />;
+}
+
 function DeleteConfirmDialog({
   open,
   onOpenChange,
@@ -338,6 +450,11 @@ export function IntegrationFormDialog({
 }: IntegrationFormDialogProps) {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{
+    status: "success" | "error";
+    message: string;
+  } | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [formData, setFormData] = useState<IntegrationFormData>({
@@ -352,6 +469,7 @@ export function IntegrationFormDialog({
   );
 
   useEffect(() => {
+    setTestResult(null);
     if (integration) {
       setFormData({
         name: integration.name,
@@ -442,6 +560,48 @@ export function IntegrationFormDialog({
     }
   };
 
+  const handleTestConnection = async () => {
+    if (!formData.type) {
+      return;
+    }
+
+    // Check if we have any config values to test
+    const hasConfig = Object.values(formData.config).some(
+      (v) => v && v.length > 0
+    );
+    if (!hasConfig && mode === "create") {
+      toast.error("Please enter credentials first");
+      return;
+    }
+
+    try {
+      setTesting(true);
+      setTestResult(null);
+
+      let result: { status: "success" | "error"; message: string };
+
+      if (mode === "edit" && integration && !hasConfig) {
+        // Test existing integration (no new config entered)
+        result = await api.integration.testConnection(integration.id);
+      } else {
+        // Test with new credentials
+        result = await api.integration.testCredentials({
+          type: formData.type,
+          config: formData.config,
+        });
+      }
+
+      setTestResult(result);
+    } catch (error) {
+      console.error("Failed to test connection:", error);
+      const message =
+        error instanceof Error ? error.message : "Failed to test connection";
+      setTestResult({ status: "error", message });
+    } finally {
+      setTesting(false);
+    }
+  };
+
   const updateConfig = (key: string, value: string) => {
     setFormData({
       ...formData,
@@ -528,46 +688,19 @@ export function IntegrationFormDialog({
         <DialogFooter
           className={step === "configure" ? "sm:justify-between" : ""}
         >
-          {step === "configure" && mode === "create" && !preselectedType && (
-            <Button disabled={saving} onClick={handleBack} variant="ghost">
-              <ArrowLeft className="mr-2 size-4" />
-              Back
-            </Button>
-          )}
-          {step === "configure" && mode === "edit" && (
-            <Button
-              disabled={saving || deleting}
-              onClick={() => setShowDeleteConfirm(true)}
-              variant="ghost"
-            >
-              <Trash2 className="mr-2 size-4" />
-              Delete
-            </Button>
-          )}
-          {step === "select" ? (
-            <Button onClick={() => onClose()} variant="outline">
-              Cancel
-            </Button>
-          ) : (
-            <div className="flex gap-2">
-              <Button
-                disabled={saving || deleting}
-                onClick={() => onClose()}
-                type="button"
-                variant="outline"
-              >
-                Cancel
-              </Button>
-              <Button
-                disabled={saving || deleting}
-                form="integration-form"
-                type="submit"
-              >
-                {saving ? <Spinner className="mr-2 size-4" /> : null}
-                {mode === "edit" ? "Update" : "Create"}
-              </Button>
-            </div>
-          )}
+          <FormFooterActions
+            deleting={deleting}
+            mode={mode}
+            onBack={handleBack}
+            onClose={onClose}
+            onDelete={() => setShowDeleteConfirm(true)}
+            onTestConnection={handleTestConnection}
+            preselectedType={preselectedType}
+            saving={saving}
+            step={step}
+            testing={testing}
+            testResult={testResult}
+          />
         </DialogFooter>
       </DialogContent>
 
